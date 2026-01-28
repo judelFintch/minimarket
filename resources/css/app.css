@@ -1,0 +1,21 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+    :root {
+        --brand-600: 14 116 144;
+        --brand-700: 12 98 122;
+        --accent-500: 245 158 11;
+    }
+
+    body {
+        font-family: "Manrope", "Segoe UI", sans-serif;
+        background-color: #f8fafc;
+        color: #0f172a;
+    }
+
+    [x-cloak] {
+        display: none !important;
+    }
+}
