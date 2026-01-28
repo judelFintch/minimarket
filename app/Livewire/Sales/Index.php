@@ -9,7 +9,6 @@ use App\Models\SaleItem;
 use App\Models\Stock;
 use App\Models\StockMovement;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 use Livewire\Component;
@@ -26,10 +25,6 @@ class Index extends Component
     public string $productSearch = '';
     public float $discountRate = 0;
     public float $taxRate = 0;
-    public string $catalogSearch = '';
-    public int $catalogCategory = 0;
-    public string $catalogStock = '';
-    public int $catalogPerPage = 20;
 
     protected function rules(): array
     {
@@ -62,40 +57,6 @@ class Index extends Component
     public function updatingProductSearch(): void
     {
         $this->resetPage();
-    }
-
-    public function updatingCatalogSearch(): void
-    {
-        $this->resetPage();
-        $this->catalogPerPage = 20;
-    }
-
-    public function updatingCatalogCategory(): void
-    {
-        $this->resetPage();
-        $this->catalogPerPage = 20;
-    }
-
-    public function updatingCatalogStock(): void
-    {
-        $this->resetPage();
-        $this->catalogPerPage = 20;
-    }
-
-    public function loadMoreCatalog(): void
-    {
-        $this->catalogPerPage += 20;
-    }
-
-    public function toggleFavorite(int $productId): void
-    {
-        $user = auth()->user();
-
-        if (! $user) {
-            return;
-        }
-
-        $user->favoriteProducts()->toggle($productId);
     }
 
     public function addItem(): void
@@ -452,77 +413,11 @@ class Index extends Component
                 ->get();
         }
 
-        $catalogQuery = Product::query()
-            ->with(['stock', 'category'])
-            ->when($this->catalogSearch !== '', function ($query) {
-                $query->where('name', 'like', '%' . $this->catalogSearch . '%');
-            })
-            ->when($this->catalogCategory > 0, function ($query) {
-                $query->where('category_id', $this->catalogCategory);
-            })
-            ->when($this->catalogStock === 'low', function ($query) {
-                $query->whereHas('stock', function ($stockQuery) {
-                    $stockQuery->where('quantity', '<=', 5);
-                });
-            })
-            ->when($this->catalogStock === 'out', function ($query) {
-                $query->whereHas('stock', function ($stockQuery) {
-                    $stockQuery->where('quantity', '<=', 0);
-                });
-            })
-            ->orderBy('name');
-
-        $catalogTotal = (clone $catalogQuery)->count();
-        $catalogProducts = (clone $catalogQuery)
-            ->limit($this->catalogPerPage)
-            ->get();
-
-        $categories = \App\Models\Category::query()
-            ->orderBy('name')
-            ->get();
-
-        $favoriteIds = auth()->user()?->favoriteProducts()->pluck('products.id')->all() ?? [];
-        $favoriteProducts = auth()->user()
-            ? auth()->user()->favoriteProducts()->with(['stock', 'category'])->limit(8)->get()
-            : collect();
-
-        $frequentProductIds = [];
-        if (
-            Schema::hasColumns('sale_items', ['product_id', 'sale_id', 'quantity']) &&
-            Schema::hasColumn('sales', 'status')
-        ) {
-            $frequentProductIds = SaleItem::query()
-                ->select('product_id', DB::raw('sum(quantity) as total_qty'))
-                ->join('sales', 'sales.id', '=', 'sale_items.sale_id')
-                ->where('sales.status', 'paid')
-                ->groupBy('product_id')
-                ->orderByDesc('total_qty')
-                ->limit(6)
-                ->pluck('product_id')
-                ->all();
-        }
-
-        $frequentProducts = collect();
-        if (! empty($frequentProductIds)) {
-            $ids = implode(',', $frequentProductIds);
-            $frequentProducts = Product::query()
-                ->with(['stock', 'category'])
-                ->whereIn('id', $frequentProductIds)
-                ->orderByRaw("FIELD(id, {$ids})")
-                ->get();
-        }
-
         $totals = $this->calculateTotals($this->items, (float) $this->discountRate, (float) $this->taxRate);
 
         return view('livewire.sales.index', [
             'products' => $products,
             'filteredProducts' => $filteredProducts,
-            'catalogProducts' => $catalogProducts,
-            'catalogTotal' => $catalogTotal,
-            'categories' => $categories,
-            'favoriteProducts' => $favoriteProducts,
-            'favoriteIds' => $favoriteIds,
-            'frequentProducts' => $frequentProducts,
             'totals' => $totals,
         ])->layout('layouts.app');
     }
