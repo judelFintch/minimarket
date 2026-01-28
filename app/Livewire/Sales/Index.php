@@ -22,10 +22,6 @@ class Index extends Component
     public ?string $customer_name = null;
     public ?string $sold_at = null;
     public array $items = [];
-    public string $search = '';
-    public ?string $date_from = null;
-    public ?string $date_to = null;
-    public string $status_filter = '';
     public string $barcodeInput = '';
     public string $productSearch = '';
     public float $discountRate = 0;
@@ -61,11 +57,6 @@ class Index extends Component
                 'discount_rate' => 0,
             ],
         ];
-    }
-
-    public function updatingSearch(): void
-    {
-        $this->resetPage();
     }
 
     public function updatingProductSearch(): void
@@ -105,21 +96,6 @@ class Index extends Component
         }
 
         $user->favoriteProducts()->toggle($productId);
-    }
-
-    public function updatingDateFrom(): void
-    {
-        $this->resetPage();
-    }
-
-    public function updatingDateTo(): void
-    {
-        $this->resetPage();
-    }
-
-    public function updatingStatusFilter(): void
-    {
-        $this->resetPage();
     }
 
     public function addItem(): void
@@ -536,34 +512,6 @@ class Index extends Component
                 ->get();
         }
 
-        $todaySalesQuery = Sale::query()->whereDate('sold_at', now()->toDateString())->where('status', 'paid');
-        $todayCount = (int) $todaySalesQuery->count();
-        $todayTotal = (float) $todaySalesQuery->sum('total_amount');
-        $avgTicket = $todayCount > 0 ? $todayTotal / $todayCount : 0;
-        $pendingCount = (int) Sale::query()->where('status', 'pending')->count();
-
-        $sales = Sale::query()
-            ->with(['invoice'])
-            ->withCount('items')
-            ->when($this->search !== '', function ($query) {
-                $query->where(function ($subQuery) {
-                    $subQuery->where('reference', 'like', '%' . $this->search . '%')
-                        ->orWhere('customer_name', 'like', '%' . $this->search . '%');
-                });
-            })
-            ->when($this->date_from, function ($query) {
-                $query->whereDate('sold_at', '>=', $this->date_from);
-            })
-            ->when($this->date_to, function ($query) {
-                $query->whereDate('sold_at', '<=', $this->date_to);
-            })
-            ->when($this->status_filter !== '', function ($query) {
-                $query->where('status', $this->status_filter);
-            })
-            ->orderByDesc('sold_at')
-            ->orderByDesc('id')
-            ->paginate(10);
-
         $totals = $this->calculateTotals($this->items, (float) $this->discountRate, (float) $this->taxRate);
 
         return view('livewire.sales.index', [
@@ -575,12 +523,7 @@ class Index extends Component
             'favoriteProducts' => $favoriteProducts,
             'favoriteIds' => $favoriteIds,
             'frequentProducts' => $frequentProducts,
-            'sales' => $sales,
             'totals' => $totals,
-            'todayCount' => $todayCount,
-            'todayTotal' => $todayTotal,
-            'avgTicket' => $avgTicket,
-            'pendingCount' => $pendingCount,
         ])->layout('layouts.app');
     }
 }
