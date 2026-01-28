@@ -62,16 +62,44 @@
             <div class="app-card-body">
                 <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
                     @forelse ($catalogProducts as $product)
-                        @php $stockQty = $product->stock?->quantity ?? 0; @endphp
+                        @php
+                            $stockQty = $product->stock?->quantity ?? 0;
+                            $price = $product->promo_price !== null ? $product->promo_price : $product->sale_price;
+                        @endphp
                         <button type="button"
                             wire:click="addProduct({{ $product->id }})"
                             class="group flex h-full flex-col justify-between rounded-2xl border border-slate-200 bg-white p-4 text-left shadow-sm transition hover:-translate-y-0.5 hover:border-teal-200 hover:shadow-md">
-                            <div class="space-y-2">
-                                <div class="text-sm font-semibold text-slate-900">{{ $product->name }}</div>
-                                <div class="text-xs text-slate-500">{{ $product->category?->name ?? 'Sans categorie' }}</div>
+                            <div class="space-y-3">
+                                <div class="relative overflow-hidden rounded-xl border border-slate-100 bg-slate-50">
+                                    @if ($product->image_url)
+                                        <img src="{{ $product->image_url }}" alt="{{ $product->name }}" class="h-28 w-full object-cover" />
+                                    @else
+                                        <div class="flex h-28 w-full items-center justify-center bg-gradient-to-br from-teal-50 via-white to-amber-50 text-xl font-semibold text-slate-400">
+                                            {{ strtoupper(substr($product->name, 0, 1)) }}
+                                        </div>
+                                    @endif
+                                </div>
+
+                                <div class="flex items-start justify-between gap-3">
+                                    <div>
+                                        <div class="text-sm font-semibold text-slate-900">{{ $product->name }}</div>
+                                        <div class="text-xs text-slate-500">{{ $product->category?->name ?? 'Sans categorie' }}</div>
+                                    </div>
+                                    @if ($product->promo_label || $product->promo_price !== null)
+                                        <span class="rounded-full bg-rose-100 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-rose-700">
+                                            {{ $product->promo_label ?? 'Promo' }}
+                                        </span>
+                                    @endif
+                                </div>
                             </div>
-                            <div class="mt-4 flex items-end justify-between">
-                                <div class="text-lg font-semibold text-teal-700">{{ number_format($product->sale_price ?? 0, 2) }}</div>
+
+                            <div class="mt-4 flex items-center justify-between gap-3">
+                                <div>
+                                    <div class="text-lg font-semibold text-teal-700">{{ number_format($price ?? 0, 2) }}</div>
+                                    @if ($product->promo_price !== null)
+                                        <div class="text-xs text-slate-400 line-through">{{ number_format($product->sale_price ?? 0, 2) }}</div>
+                                    @endif
+                                </div>
                                 <div class="text-xs font-semibold {{ $stockQty <= 0 ? 'text-rose-600' : ($stockQty <= 5 ? 'text-amber-600' : 'text-slate-500') }}">
                                     Stock {{ $stockQty }}
                                 </div>

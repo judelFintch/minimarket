@@ -14,9 +14,18 @@ class Product extends Model
         'name',
         'sku',
         'barcode',
+        'image_url',
         'unit',
         'cost_price',
         'sale_price',
+        'promo_label',
+        'promo_price',
+    ];
+
+    protected $casts = [
+        'promo_price' => 'decimal:2',
+        'sale_price' => 'decimal:2',
+        'cost_price' => 'decimal:2',
     ];
 
     public function category(): BelongsTo

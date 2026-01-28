@@ -125,7 +125,8 @@ class Index extends Component
             }
         }
 
-        $price = Product::query()->whereKey($productId)->value('sale_price');
+        $product = Product::query()->select(['id', 'sale_price', 'promo_price'])->find($productId);
+        $price = $product && $product->promo_price !== null ? (float) $product->promo_price : (float) ($product?->sale_price ?? 0);
         $this->items[] = [
             'product_id' => $productId,
             'quantity' => 1,
@@ -165,8 +166,9 @@ class Index extends Component
             return;
         }
 
-        $product = Product::query()->select(['id', 'sale_price'])->find($value);
-        $this->items[$index]['unit_price'] = $product?->sale_price ?? 0;
+        $product = Product::query()->select(['id', 'sale_price', 'promo_price'])->find($value);
+        $price = $product && $product->promo_price !== null ? (float) $product->promo_price : (float) ($product?->sale_price ?? 0);
+        $this->items[$index]['unit_price'] = $price;
     }
 
     public function removeItem(int $index): void
@@ -196,7 +198,11 @@ class Index extends Component
         $productIds = collect($items)->pluck('product_id')->filter()->unique()->values();
         $prices = Product::query()
             ->whereIn('id', $productIds)
-            ->pluck('sale_price', 'id');
+            ->get(['id', 'sale_price', 'promo_price'])
+            ->mapWithKeys(function ($product) {
+                $price = $product->promo_price !== null ? (float) $product->promo_price : (float) $product->sale_price;
+                return [$product->id => $price];
+            });
 
         return collect($items)->map(function ($item) use ($prices) {
             $price = (float) ($prices[$item['product_id']] ?? 0);
