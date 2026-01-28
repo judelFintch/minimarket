@@ -9,6 +9,7 @@ use App\Models\SaleItem;
 use App\Models\Stock;
 use App\Models\StockMovement;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 use Livewire\Component;
@@ -140,6 +141,27 @@ class Index extends Component
     {
         unset($this->items[$index]);
         $this->items = array_values($this->items);
+    }
+
+    public function incrementQuantity(int $index): void
+    {
+        if (! isset($this->items[$index])) {
+            return;
+        }
+
+        $this->items[$index]['quantity'] = ((int) ($this->items[$index]['quantity'] ?? 0)) + 1;
+        $this->dispatch('focus-barcode');
+    }
+
+    public function decrementQuantity(int $index): void
+    {
+        if (! isset($this->items[$index])) {
+            return;
+        }
+
+        $current = (int) ($this->items[$index]['quantity'] ?? 1);
+        $this->items[$index]['quantity'] = max(1, $current - 1);
+        $this->dispatch('focus-barcode');
     }
 
     public function resetForm(): void
@@ -425,11 +447,40 @@ class Index extends Component
                 ->get();
         }
 
+        $favoriteProducts = auth()->user()
+            ? auth()->user()->favoriteProducts()->with('stock')->limit(6)->get()
+            : collect();
+
+        $frequentProductIds = [];
+        if (Schema::hasColumns('sale_items', ['product_id', 'sale_id', 'quantity']) && Schema::hasColumn('sales', 'status')) {
+            $frequentProductIds = SaleItem::query()
+                ->select('product_id', DB::raw('sum(quantity) as total_qty'))
+                ->join('sales', 'sales.id', '=', 'sale_items.sale_id')
+                ->where('sales.status', 'paid')
+                ->groupBy('product_id')
+                ->orderByDesc('total_qty')
+                ->limit(6)
+                ->pluck('product_id')
+                ->all();
+        }
+
+        $frequentProducts = collect();
+        if (! empty($frequentProductIds)) {
+            $ids = implode(',', $frequentProductIds);
+            $frequentProducts = Product::query()
+                ->with('stock')
+                ->whereIn('id', $frequentProductIds)
+                ->orderByRaw("FIELD(id, {$ids})")
+                ->get();
+        }
+
         $totals = $this->calculateTotals($this->items, (float) $this->discountRate, (float) $this->taxRate);
 
         return view('livewire.sales.index', [
             'products' => $products,
             'filteredProducts' => $filteredProducts,
+            'favoriteProducts' => $favoriteProducts,
+            'frequentProducts' => $frequentProducts,
             'totals' => $totals,
         ])->layout('layouts.app');
     }

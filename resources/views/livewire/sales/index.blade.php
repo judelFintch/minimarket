@@ -87,6 +87,24 @@
                     <div class="app-card-body">
                         @error('items') <p class="text-sm text-red-600">{{ $message }}</p> @enderror
 
+                        @if ($favoriteProducts->isNotEmpty() || $frequentProducts->isNotEmpty())
+                            <div class="mb-4">
+                                <div class="mb-2 text-xs font-semibold uppercase tracking-wider text-slate-500">Raccourcis</div>
+                                <div class="flex flex-wrap gap-2">
+                                    @foreach ($favoriteProducts as $product)
+                                        <button type="button" wire:click="addProduct({{ $product->id }})" class="rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-xs font-semibold text-amber-700">
+                                            ★ {{ $product->name }}
+                                        </button>
+                                    @endforeach
+                                    @foreach ($frequentProducts as $product)
+                                        <button type="button" wire:click="addProduct({{ $product->id }})" class="rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-semibold text-slate-600">
+                                            {{ $product->name }}
+                                        </button>
+                                    @endforeach
+                                </div>
+                            </div>
+                        @endif
+
                         <div class="mb-4 grid gap-3 rounded-2xl border border-slate-200/70 bg-slate-50/80 p-4">
                             <div>
                                 <label class="app-label">Recherche rapide</label>
@@ -136,7 +154,15 @@
 
                                     <div class="lg:col-span-2">
                                         <label class="app-label">Quantite</label>
-                                        <input type="number" min="1" wire:model.live="items.{{ $index }}.quantity" class="app-input" />
+                                        <div class="flex items-center gap-2">
+                                            <button type="button" wire:click="decrementQuantity({{ $index }})" class="h-9 w-9 rounded-xl border border-slate-200 bg-white text-lg font-semibold text-slate-600 hover:bg-slate-50">
+                                                -
+                                            </button>
+                                            <input type="number" min="1" wire:model.live="items.{{ $index }}.quantity" class="app-input" />
+                                            <button type="button" wire:click="incrementQuantity({{ $index }})" class="h-9 w-9 rounded-xl border border-slate-200 bg-white text-lg font-semibold text-slate-600 hover:bg-slate-50">
+                                                +
+                                            </button>
+                                        </div>
                                         @error("items.$index.quantity") <p class="mt-1 text-xs text-red-600">{{ $message }}</p> @enderror
                                     </div>
 
