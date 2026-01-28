@@ -215,6 +215,11 @@
                                     Mettre en attente
                                 </button>
                             </div>
+                            @if ($lastInvoiceId)
+                                <a href="{{ route('invoices.receipt', $lastInvoiceId) }}" class="app-btn-ghost text-emerald-700 hover:text-emerald-800">
+                                    Imprimer ticket
+                                </a>
+                            @endif
                             <button type="button" wire:click="resetForm" class="app-btn-ghost">
                                 Reinitialiser
                             </button>
