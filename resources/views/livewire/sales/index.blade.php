@@ -1,10 +1,13 @@
 <div
     class="space-y-8"
-    x-data
+    x-data="{ searchCount: {{ $filteredProducts->count() }}, activeIndex: 0 }"
+    x-init="$nextTick(() => $refs.barcode?.focus())"
     x-on:keydown.window="
         if (($event.ctrlKey || $event.metaKey) && $event.key === 'Enter' && ! $event.shiftKey) { $event.preventDefault(); $wire.saveSale(); }
         if (($event.ctrlKey || $event.metaKey) && $event.key === 'Enter' && $event.shiftKey) { $event.preventDefault(); $wire.savePending(); }
         if (($event.ctrlKey || $event.metaKey) && ($event.key === 'i' || $event.key === 'I')) { $event.preventDefault(); $wire.addItem(); }
+        if ($event.key === 'F2') { $event.preventDefault(); $refs.customer?.focus(); }
+        if ($event.key === 'F4') { $event.preventDefault(); $refs.barcode?.focus(); }
     "
     x-on:notify.window="
         $dispatch('toast', { message: $event.detail.message, invoiceId: $event.detail.invoiceId });
@@ -18,6 +21,7 @@
             }
         }
     "
+    x-on:focus-barcode.window="$refs.barcode?.focus()"
 >
     <div
         x-data="{ open: false, message: '', invoiceId: null }"
@@ -72,6 +76,7 @@
                                 <input
                                     type="text"
                                     wire:model.live.debounce.300ms="barcodeInput"
+                                    x-ref="barcode"
                                     placeholder="Code-barres"
                                     class="w-28 border-0 bg-transparent p-0 text-xs text-slate-700 focus:ring-0"
                                 />
@@ -85,12 +90,24 @@
                         <div class="mb-4 grid gap-3 rounded-2xl border border-slate-200/70 bg-slate-50/80 p-4">
                             <div>
                                 <label class="app-label">Recherche rapide</label>
-                                <input type="text" wire:model.live.debounce.300ms="productSearch" placeholder="Nom du produit" class="app-input" />
+                                <input type="text"
+                                    wire:model.live.debounce.300ms="productSearch"
+                                    placeholder="Nom du produit"
+                                    class="app-input"
+                                    x-ref="productSearch"
+                                    x-on:keydown.down.prevent="if (searchCount > 0) { activeIndex = Math.min(activeIndex + 1, searchCount - 1); }"
+                                    x-on:keydown.up.prevent="if (searchCount > 0) { activeIndex = Math.max(activeIndex - 1, 0); }"
+                                    x-on:keydown.enter.prevent="if (searchCount > 0) { document.getElementById('search-item-' + activeIndex)?.click(); }"
+                                />
                             </div>
                             @if ($productSearch !== '')
                                 <div class="grid gap-2 sm:grid-cols-2">
                                     @forelse ($filteredProducts as $product)
-                                        <button type="button" wire:click="addProduct({{ $product->id }})" class="app-btn-secondary justify-between">
+                                        <button type="button"
+                                            id="search-item-{{ $loop->index }}"
+                                            wire:click="addProduct({{ $product->id }})"
+                                            class="app-btn-secondary justify-between"
+                                            :class="activeIndex === {{ $loop->index }} ? 'ring-2 ring-teal-300' : ''">
                                             <span>{{ $product->name }}</span>
                                             <span class="text-xs text-slate-500">Stock {{ $product->stock?->quantity ?? 0 }}</span>
                                         </button>
@@ -174,7 +191,7 @@
                         <div class="space-y-4">
                             <div>
                                 <label class="app-label">Client</label>
-                                <input type="text" wire:model.live="customer_name" class="app-input" />
+                                <input type="text" wire:model.live="customer_name" class="app-input" x-ref="customer" />
                                 @error('customer_name') <p class="mt-1 text-xs text-red-600">{{ $message }}</p> @enderror
                             </div>
 

@@ -68,6 +68,8 @@ class Index extends Component
             'unit_price' => null,
             'discount_rate' => 0,
         ];
+
+        $this->dispatch('focus-barcode');
     }
 
     public function addProduct(int $productId): void
@@ -80,6 +82,7 @@ class Index extends Component
                         ->whereKey($productId)
                         ->value('sale_price');
                 }
+                $this->dispatch('focus-barcode');
                 return;
             }
         }
@@ -92,6 +95,8 @@ class Index extends Component
             'unit_price' => $price ?? 0,
             'discount_rate' => 0,
         ];
+
+        $this->dispatch('focus-barcode');
     }
 
     public function updatedBarcodeInput($value): void
@@ -109,6 +114,7 @@ class Index extends Component
         if ($productId) {
             $this->addProduct((int) $productId);
             $this->barcodeInput = '';
+            $this->dispatch('focus-barcode');
         }
     }
 
