@@ -1,4 +1,12 @@
-<div class="space-y-8">
+<div
+    class="space-y-8"
+    x-data
+    x-on:keydown.window="
+        if (($event.ctrlKey || $event.metaKey) && $event.key === 'Enter' && ! $event.shiftKey) { $event.preventDefault(); $wire.saveSale(); }
+        if (($event.ctrlKey || $event.metaKey) && $event.key === 'Enter' && $event.shiftKey) { $event.preventDefault(); $wire.savePending(); }
+        if (($event.ctrlKey || $event.metaKey) && ($event.key === 'i' || $event.key === 'I')) { $event.preventDefault(); $wire.addItem(); }
+    "
+>
     <x-slot name="header">
         <div>
             <h2 class="app-title">Ventes</h2>
@@ -37,6 +45,9 @@
                         <div>
                             <h3 class="app-card-title">Panier</h3>
                             <p class="app-card-subtitle">Ajoutez des articles a la vente.</p>
+                            <p class="mt-1 text-xs text-slate-400">
+                                Raccourcis: Ctrl/Cmd + Entrer (encaisser), Ctrl/Cmd + Maj + Entrer (attente), Ctrl/Cmd + I (nouvelle ligne)
+                            </p>
                         </div>
                         <div class="flex flex-wrap items-center gap-2">
                             <button type="button" wire:click="addItem" class="app-btn-primary">
