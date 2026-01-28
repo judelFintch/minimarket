@@ -38,13 +38,43 @@
                             <h3 class="app-card-title">Panier</h3>
                             <p class="app-card-subtitle">Ajoutez des articles a la vente.</p>
                         </div>
-                        <button type="button" wire:click="addItem" class="app-btn-primary">
-                            Ajouter une ligne
-                        </button>
+                        <div class="flex flex-wrap items-center gap-2">
+                            <button type="button" wire:click="addItem" class="app-btn-primary">
+                                Ajouter une ligne
+                            </button>
+                            <div class="flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-500">
+                                <span class="uppercase tracking-wider">Scan</span>
+                                <input
+                                    type="text"
+                                    wire:model.live.debounce.300ms="barcodeInput"
+                                    placeholder="Code-barres"
+                                    class="w-28 border-0 bg-transparent p-0 text-xs text-slate-700 focus:ring-0"
+                                />
+                            </div>
+                        </div>
                     </div>
 
                     <div class="app-card-body">
                         @error('items') <p class="text-sm text-red-600">{{ $message }}</p> @enderror
+
+                        <div class="mb-4 grid gap-3 rounded-2xl border border-slate-200/70 bg-slate-50/80 p-4">
+                            <div>
+                                <label class="app-label">Recherche rapide</label>
+                                <input type="text" wire:model.live.debounce.300ms="productSearch" placeholder="Nom du produit" class="app-input" />
+                            </div>
+                            @if ($productSearch !== '')
+                                <div class="grid gap-2 sm:grid-cols-2">
+                                    @forelse ($filteredProducts as $product)
+                                        <button type="button" wire:click="addProduct({{ $product->id }})" class="app-btn-secondary justify-between">
+                                            <span>{{ $product->name }}</span>
+                                            <span class="text-xs text-slate-500">Stock {{ $product->stock?->quantity ?? 0 }}</span>
+                                        </button>
+                                    @empty
+                                        <div class="text-sm text-slate-500">Aucun produit trouve.</div>
+                                    @endforelse
+                                </div>
+                            @endif
+                        </div>
 
                         <div class="space-y-3">
                             @foreach ($items as $index => $item)

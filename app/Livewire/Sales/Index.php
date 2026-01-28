@@ -25,6 +25,8 @@ class Index extends Component
     public ?string $date_from = null;
     public ?string $date_to = null;
     public string $status_filter = '';
+    public string $barcodeInput = '';
+    public string $productSearch = '';
 
     protected function rules(): array
     {
@@ -55,6 +57,11 @@ class Index extends Component
         $this->resetPage();
     }
 
+    public function updatingProductSearch(): void
+    {
+        $this->resetPage();
+    }
+
     public function updatingDateFrom(): void
     {
         $this->resetPage();
@@ -77,6 +84,46 @@ class Index extends Component
             'quantity' => 1,
             'unit_price' => null,
         ];
+    }
+
+    public function addProduct(int $productId): void
+    {
+        foreach ($this->items as $index => $item) {
+            if ((int) ($item['product_id'] ?? 0) === $productId) {
+                $this->items[$index]['quantity'] = ((int) ($item['quantity'] ?? 0)) + 1;
+                if (! $this->items[$index]['unit_price']) {
+                    $this->items[$index]['unit_price'] = Product::query()
+                        ->whereKey($productId)
+                        ->value('sale_price');
+                }
+                return;
+            }
+        }
+
+        $price = Product::query()->whereKey($productId)->value('sale_price');
+        $this->items[] = [
+            'product_id' => $productId,
+            'quantity' => 1,
+            'unit_price' => $price ?? 0,
+        ];
+    }
+
+    public function updatedBarcodeInput($value): void
+    {
+        $barcode = trim((string) $value);
+
+        if ($barcode === '') {
+            return;
+        }
+
+        $productId = Product::query()
+            ->where('barcode', $barcode)
+            ->value('id');
+
+        if ($productId) {
+            $this->addProduct((int) $productId);
+            $this->barcodeInput = '';
+        }
     }
 
     public function updatedItems($value, $name): void
@@ -321,6 +368,16 @@ class Index extends Component
             ->orderBy('name')
             ->get();
 
+        $filteredProducts = collect();
+        if ($this->productSearch !== '') {
+            $filteredProducts = Product::query()
+                ->with('stock')
+                ->where('name', 'like', '%' . $this->productSearch . '%')
+                ->orderBy('name')
+                ->limit(6)
+                ->get();
+        }
+
         $todaySalesQuery = Sale::query()->whereDate('sold_at', now()->toDateString())->where('status', 'paid');
         $todayCount = (int) $todaySalesQuery->count();
         $todayTotal = (float) $todaySalesQuery->sum('total_amount');
@@ -357,6 +414,7 @@ class Index extends Component
 
         return view('livewire.sales.index', [
             'products' => $products,
+            'filteredProducts' => $filteredProducts,
             'sales' => $sales,
             'total' => $total,
             'todayCount' => $todayCount,
