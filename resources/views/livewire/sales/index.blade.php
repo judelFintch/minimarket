@@ -90,7 +90,7 @@
                         <div class="space-y-3">
                             @foreach ($items as $index => $item)
                                 <div class="grid items-end gap-3 rounded-2xl border border-slate-200/80 bg-white p-4 shadow-sm lg:grid-cols-12">
-                                    <div class="lg:col-span-5">
+                                    <div class="lg:col-span-4">
                                         <label class="app-label">Produit</label>
                                         <select wire:model.live="items.{{ $index }}.product_id" class="app-select">
                                             <option value="">Selectionner</option>
@@ -109,7 +109,7 @@
                                         @error("items.$index.quantity") <p class="mt-1 text-xs text-red-600">{{ $message }}</p> @enderror
                                     </div>
 
-                                    <div class="lg:col-span-3">
+                                    <div class="lg:col-span-2">
                                         <div class="flex items-center justify-between">
                                             <label class="app-label">Prix unitaire</label>
                                             <span class="text-xs font-semibold text-emerald-600">Auto</span>
@@ -118,11 +118,22 @@
                                         @error("items.$index.unit_price") <p class="mt-1 text-xs text-red-600">{{ $message }}</p> @enderror
                                     </div>
 
+                                    <div class="lg:col-span-2">
+                                        <label class="app-label">Remise %</label>
+                                        <input type="number" min="0" max="100" step="0.01" wire:model.live="items.{{ $index }}.discount_rate" class="app-input" />
+                                        @error("items.$index.discount_rate") <p class="mt-1 text-xs text-red-600">{{ $message }}</p> @enderror
+                                    </div>
+
                                     <div class="lg:col-span-2 flex items-center justify-between gap-2">
                                         <div class="text-right">
                                             <div class="text-xs uppercase tracking-wide text-slate-400">Total ligne</div>
                                             <div class="text-base font-semibold text-slate-900">
-                                                {{ number_format(((int) ($item['quantity'] ?? 0)) * ((float) ($item['unit_price'] ?? 0)), 2) }}
+                                                @php
+                                                    $lineBase = ((int) ($item['quantity'] ?? 0)) * ((float) ($item['unit_price'] ?? 0));
+                                                    $lineDiscount = $lineBase * (((float) ($item['discount_rate'] ?? 0)) / 100);
+                                                    $lineTotal = $lineBase - $lineDiscount;
+                                                @endphp
+                                                {{ number_format($lineTotal, 2) }}
                                             </div>
                                         </div>
                                         <button type="button" wire:click="removeItem({{ $index }})" class="text-xs font-semibold text-rose-600 hover:text-rose-700">
@@ -160,8 +171,35 @@
                             </div>
 
                             <div class="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3">
-                                <div class="text-xs uppercase tracking-wide text-slate-400">Total</div>
-                                <div class="text-2xl font-semibold text-slate-900">{{ number_format($total, 2) }}</div>
+                                <div class="text-xs uppercase tracking-wide text-slate-400">Sous-total</div>
+                                <div class="text-2xl font-semibold text-slate-900">{{ number_format($totals['subtotal'], 2) }}</div>
+                            </div>
+
+                            <div class="grid gap-3 sm:grid-cols-2">
+                                <div>
+                                    <label class="app-label">Remise globale (%)</label>
+                                    <input type="number" min="0" max="100" step="0.01" wire:model.live="discountRate" class="app-input" />
+                                </div>
+                                <div>
+                                    <label class="app-label">TVA (%)</label>
+                                    <input type="number" min="0" max="100" step="0.01" wire:model.live="taxRate" class="app-input" />
+                                </div>
+                            </div>
+
+                            <div class="grid gap-3 sm:grid-cols-2">
+                                <div class="rounded-xl border border-slate-200 bg-white px-4 py-3">
+                                    <div class="text-xs uppercase tracking-wide text-slate-400">Remise</div>
+                                    <div class="text-lg font-semibold text-slate-900">- {{ number_format($totals['discountAmount'], 2) }}</div>
+                                </div>
+                                <div class="rounded-xl border border-slate-200 bg-white px-4 py-3">
+                                    <div class="text-xs uppercase tracking-wide text-slate-400">TVA</div>
+                                    <div class="text-lg font-semibold text-slate-900">+ {{ number_format($totals['taxAmount'], 2) }}</div>
+                                </div>
+                            </div>
+
+                            <div class="rounded-xl border border-slate-200 bg-slate-900 px-4 py-3 text-white">
+                                <div class="text-xs uppercase tracking-wide text-white/70">Total a payer</div>
+                                <div class="text-2xl font-semibold">{{ number_format($totals['total'], 2) }}</div>
                             </div>
 
                             <div class="grid gap-3 sm:grid-cols-2">

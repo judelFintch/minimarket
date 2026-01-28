@@ -12,11 +12,15 @@ class SaleItem extends Model
         'product_id',
         'quantity',
         'unit_price',
+        'discount_rate',
+        'discount_amount',
         'line_total',
     ];
 
     protected $casts = [
         'unit_price' => 'decimal:2',
+        'discount_rate' => 'decimal:2',
+        'discount_amount' => 'decimal:2',
         'line_total' => 'decimal:2',
     ];
 

@@ -27,6 +27,8 @@ class Index extends Component
     public string $status_filter = '';
     public string $barcodeInput = '';
     public string $productSearch = '';
+    public float $discountRate = 0;
+    public float $taxRate = 0;
 
     protected function rules(): array
     {
@@ -37,6 +39,9 @@ class Index extends Component
             'items.*.product_id' => ['required', 'exists:products,id'],
             'items.*.quantity' => ['required', 'integer', 'min:1'],
             'items.*.unit_price' => ['required', 'numeric', 'min:0'],
+            'items.*.discount_rate' => ['nullable', 'numeric', 'min:0', 'max:100'],
+            'discountRate' => ['nullable', 'numeric', 'min:0', 'max:100'],
+            'taxRate' => ['nullable', 'numeric', 'min:0', 'max:100'],
         ];
     }
 
@@ -48,6 +53,7 @@ class Index extends Component
                 'product_id' => null,
                 'quantity' => 1,
                 'unit_price' => null,
+                'discount_rate' => 0,
             ],
         ];
     }
@@ -83,6 +89,7 @@ class Index extends Component
             'product_id' => null,
             'quantity' => 1,
             'unit_price' => null,
+            'discount_rate' => 0,
         ];
     }
 
@@ -105,6 +112,7 @@ class Index extends Component
             'product_id' => $productId,
             'quantity' => 1,
             'unit_price' => $price ?? 0,
+            'discount_rate' => 0,
         ];
     }
 
@@ -152,12 +160,15 @@ class Index extends Component
     public function resetForm(): void
     {
         $this->reset(['customer_name', 'sold_at', 'items']);
+        $this->discountRate = 0;
+        $this->taxRate = 0;
         $this->sold_at = now()->format('Y-m-d');
         $this->items = [
             [
                 'product_id' => null,
                 'quantity' => 1,
                 'unit_price' => null,
+                'discount_rate' => 0,
             ],
         ];
     }
@@ -172,8 +183,35 @@ class Index extends Component
         return collect($items)->map(function ($item) use ($prices) {
             $price = (float) ($prices[$item['product_id']] ?? 0);
             $item['unit_price'] = $price;
+            $item['discount_rate'] = (float) ($item['discount_rate'] ?? 0);
             return $item;
         })->all();
+    }
+
+    private function calculateTotals(array $items, float $discountRate, float $taxRate): array
+    {
+        $subtotal = 0;
+        foreach ($items as $item) {
+            $quantity = (int) ($item['quantity'] ?? 0);
+            $price = (float) ($item['unit_price'] ?? 0);
+            $lineBase = $quantity * $price;
+            $lineDiscountRate = (float) ($item['discount_rate'] ?? 0);
+            $lineDiscountAmount = $lineBase * ($lineDiscountRate / 100);
+            $lineTotal = $lineBase - $lineDiscountAmount;
+            $subtotal += $lineTotal;
+        }
+
+        $discountAmount = $subtotal * ($discountRate / 100);
+        $taxable = $subtotal - $discountAmount;
+        $taxAmount = $taxable * ($taxRate / 100);
+        $total = $taxable + $taxAmount;
+
+        return [
+            'subtotal' => round($subtotal, 2),
+            'discountAmount' => round($discountAmount, 2),
+            'taxAmount' => round($taxAmount, 2),
+            'total' => round($total, 2),
+        ];
     }
 
     public function saveSale(): void
@@ -201,25 +239,33 @@ class Index extends Component
                 }
             }
 
+            $totals = $this->calculateTotals($validated['items'], (float) $this->discountRate, (float) $this->taxRate);
+
             $sale = Sale::create([
                 'reference' => 'SALE-' . now()->format('YmdHis') . '-' . Str::upper(Str::random(4)),
                 'customer_name' => $validated['customer_name'],
-                'total_amount' => 0,
+                'total_amount' => $totals['total'],
+                'subtotal_amount' => $totals['subtotal'],
+                'discount_rate' => $this->discountRate,
+                'discount_amount' => $totals['discountAmount'],
+                'tax_rate' => $this->taxRate,
+                'tax_amount' => $totals['taxAmount'],
                 'status' => 'paid',
                 'sold_at' => $validated['sold_at'],
             ]);
 
-            $totalAmount = 0;
-
             foreach ($validated['items'] as $item) {
-                $lineTotal = $item['quantity'] * $item['unit_price'];
-                $totalAmount += $lineTotal;
+                $lineBase = $item['quantity'] * $item['unit_price'];
+                $lineDiscountAmount = $lineBase * ((float) ($item['discount_rate'] ?? 0) / 100);
+                $lineTotal = $lineBase - $lineDiscountAmount;
 
                 SaleItem::create([
                     'sale_id' => $sale->id,
                     'product_id' => $item['product_id'],
                     'quantity' => $item['quantity'],
                     'unit_price' => $item['unit_price'],
+                    'discount_rate' => $item['discount_rate'] ?? 0,
+                    'discount_amount' => $lineDiscountAmount,
                     'line_total' => $lineTotal,
                 ]);
             }
@@ -243,12 +289,10 @@ class Index extends Component
                 ]);
             }
 
-            $sale->update(['total_amount' => $totalAmount]);
-
             Invoice::create([
                 'sale_id' => $sale->id,
                 'invoice_number' => 'INV-' . now()->format('YmdHis') . '-' . Str::upper(Str::random(4)),
-                'total_amount' => $totalAmount,
+                'total_amount' => $totals['total'],
                 'status' => 'paid',
                 'issued_at' => $validated['sold_at'],
                 'due_at' => $validated['sold_at'],
@@ -264,30 +308,36 @@ class Index extends Component
         $validated['items'] = $this->normalizeItemsWithPrices($validated['items']);
 
         DB::transaction(function () use ($validated) {
+            $totals = $this->calculateTotals($validated['items'], (float) $this->discountRate, (float) $this->taxRate);
+
             $sale = Sale::create([
                 'reference' => 'SALE-' . now()->format('YmdHis') . '-' . Str::upper(Str::random(4)),
                 'customer_name' => $validated['customer_name'],
-                'total_amount' => 0,
+                'total_amount' => $totals['total'],
+                'subtotal_amount' => $totals['subtotal'],
+                'discount_rate' => $this->discountRate,
+                'discount_amount' => $totals['discountAmount'],
+                'tax_rate' => $this->taxRate,
+                'tax_amount' => $totals['taxAmount'],
                 'status' => 'pending',
                 'sold_at' => $validated['sold_at'],
             ]);
 
-            $totalAmount = 0;
-
             foreach ($validated['items'] as $item) {
-                $lineTotal = $item['quantity'] * $item['unit_price'];
-                $totalAmount += $lineTotal;
+                $lineBase = $item['quantity'] * $item['unit_price'];
+                $lineDiscountAmount = $lineBase * ((float) ($item['discount_rate'] ?? 0) / 100);
+                $lineTotal = $lineBase - $lineDiscountAmount;
 
                 SaleItem::create([
                     'sale_id' => $sale->id,
                     'product_id' => $item['product_id'],
                     'quantity' => $item['quantity'],
                     'unit_price' => $item['unit_price'],
+                    'discount_rate' => $item['discount_rate'] ?? 0,
+                    'discount_amount' => $lineDiscountAmount,
                     'line_total' => $lineTotal,
                 ]);
             }
-
-            $sale->update(['total_amount' => $totalAmount]);
         });
 
         $this->resetForm();
@@ -340,11 +390,14 @@ class Index extends Component
                 ]);
             }
 
-            $totalAmount = $sale->items->sum('line_total');
+            $totals = $this->calculateTotals($sale->items->toArray(), (float) $sale->discount_rate, (float) $sale->tax_rate);
 
             $sale->update([
                 'status' => 'paid',
-                'total_amount' => $totalAmount,
+                'total_amount' => $totals['total'],
+                'subtotal_amount' => $totals['subtotal'],
+                'discount_amount' => $totals['discountAmount'],
+                'tax_amount' => $totals['taxAmount'],
                 'sold_at' => $sale->sold_at ?? now(),
             ]);
 
@@ -352,7 +405,7 @@ class Index extends Component
                 Invoice::create([
                     'sale_id' => $sale->id,
                     'invoice_number' => 'INV-' . now()->format('YmdHis') . '-' . Str::upper(Str::random(4)),
-                    'total_amount' => $totalAmount,
+                    'total_amount' => $totals['total'],
                     'status' => 'paid',
                     'issued_at' => $sale->sold_at ?? now(),
                     'due_at' => $sale->sold_at ?? now(),
@@ -406,17 +459,13 @@ class Index extends Component
             ->orderByDesc('id')
             ->paginate(10);
 
-        $total = collect($this->items)->sum(function ($item) {
-            $quantity = (int) ($item['quantity'] ?? 0);
-            $price = (float) ($item['unit_price'] ?? 0);
-            return $quantity * $price;
-        });
+        $totals = $this->calculateTotals($this->items, (float) $this->discountRate, (float) $this->taxRate);
 
         return view('livewire.sales.index', [
             'products' => $products,
             'filteredProducts' => $filteredProducts,
             'sales' => $sales,
-            'total' => $total,
+            'totals' => $totals,
             'todayCount' => $todayCount,
             'todayTotal' => $todayTotal,
             'avgTicket' => $avgTicket,
