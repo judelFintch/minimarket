@@ -38,6 +38,52 @@
             </div>
         </div>
 
+        <div class="app-card">
+            <div class="app-card-header">
+                <div>
+                    <h3 class="app-card-title">Catalogue rapide</h3>
+                    <p class="app-card-subtitle">Cliquez sur un produit pour l'ajouter au panier.</p>
+                </div>
+                <div class="flex w-full flex-wrap items-center gap-3 sm:w-auto">
+                    <input type="text" wire:model.live.debounce.300ms="catalogSearch" placeholder="Rechercher..." class="app-input sm:w-56" />
+                    <select wire:model.live="catalogCategory" class="app-select sm:w-48">
+                        <option value="0">Toutes categories</option>
+                        @foreach ($categories as $category)
+                            <option value="{{ $category->id }}">{{ $category->name }}</option>
+                        @endforeach
+                    </select>
+                    <select wire:model.live="catalogStock" class="app-select sm:w-40">
+                        <option value="">Stock</option>
+                        <option value="low">Faible</option>
+                        <option value="out">Rupture</option>
+                    </select>
+                </div>
+            </div>
+            <div class="app-card-body">
+                <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                    @forelse ($catalogProducts as $product)
+                        @php $stockQty = $product->stock?->quantity ?? 0; @endphp
+                        <button type="button"
+                            wire:click="addProduct({{ $product->id }})"
+                            class="group flex h-full flex-col justify-between rounded-2xl border border-slate-200 bg-white p-4 text-left shadow-sm transition hover:-translate-y-0.5 hover:border-teal-200 hover:shadow-md">
+                            <div class="space-y-2">
+                                <div class="text-sm font-semibold text-slate-900">{{ $product->name }}</div>
+                                <div class="text-xs text-slate-500">{{ $product->category?->name ?? 'Sans categorie' }}</div>
+                            </div>
+                            <div class="mt-4 flex items-end justify-between">
+                                <div class="text-lg font-semibold text-teal-700">{{ number_format($product->sale_price ?? 0, 2) }}</div>
+                                <div class="text-xs font-semibold {{ $stockQty <= 0 ? 'text-rose-600' : ($stockQty <= 5 ? 'text-amber-600' : 'text-slate-500') }}">
+                                    Stock {{ $stockQty }}
+                                </div>
+                            </div>
+                        </button>
+                    @empty
+                        <div class="text-sm text-slate-500">Aucun produit trouve.</div>
+                    @endforelse
+                </div>
+            </div>
+        </div>
+
         <form wire:submit.prevent="saveSale" class="grid gap-6 lg:grid-cols-12">
             <div class="lg:col-span-7">
                 <div class="app-card">

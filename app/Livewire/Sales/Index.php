@@ -29,6 +29,9 @@ class Index extends Component
     public string $productSearch = '';
     public float $discountRate = 0;
     public float $taxRate = 0;
+    public string $catalogSearch = '';
+    public int $catalogCategory = 0;
+    public string $catalogStock = '';
 
     protected function rules(): array
     {
@@ -64,6 +67,21 @@ class Index extends Component
     }
 
     public function updatingProductSearch(): void
+    {
+        $this->resetPage();
+    }
+
+    public function updatingCatalogSearch(): void
+    {
+        $this->resetPage();
+    }
+
+    public function updatingCatalogCategory(): void
+    {
+        $this->resetPage();
+    }
+
+    public function updatingCatalogStock(): void
     {
         $this->resetPage();
     }
@@ -417,7 +435,7 @@ class Index extends Component
     public function render()
     {
         $products = Product::query()
-            ->with('stock')
+            ->with(['stock', 'category'])
             ->orderBy('name')
             ->get();
 
@@ -430,6 +448,32 @@ class Index extends Component
                 ->limit(6)
                 ->get();
         }
+
+        $catalogProducts = Product::query()
+            ->with(['stock', 'category'])
+            ->when($this->catalogSearch !== '', function ($query) {
+                $query->where('name', 'like', '%' . $this->catalogSearch . '%');
+            })
+            ->when($this->catalogCategory > 0, function ($query) {
+                $query->where('category_id', $this->catalogCategory);
+            })
+            ->when($this->catalogStock === 'low', function ($query) {
+                $query->whereHas('stock', function ($stockQuery) {
+                    $stockQuery->where('quantity', '<=', 5);
+                });
+            })
+            ->when($this->catalogStock === 'out', function ($query) {
+                $query->whereHas('stock', function ($stockQuery) {
+                    $stockQuery->where('quantity', '<=', 0);
+                });
+            })
+            ->orderBy('name')
+            ->limit(20)
+            ->get();
+
+        $categories = \App\Models\Category::query()
+            ->orderBy('name')
+            ->get();
 
         $todaySalesQuery = Sale::query()->whereDate('sold_at', now()->toDateString())->where('status', 'paid');
         $todayCount = (int) $todaySalesQuery->count();
@@ -464,6 +508,8 @@ class Index extends Component
         return view('livewire.sales.index', [
             'products' => $products,
             'filteredProducts' => $filteredProducts,
+            'catalogProducts' => $catalogProducts,
+            'categories' => $categories,
             'sales' => $sales,
             'totals' => $totals,
             'todayCount' => $todayCount,
