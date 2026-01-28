@@ -60,15 +60,63 @@
                 </div>
             </div>
             <div class="app-card-body">
+                @if ($favoriteProducts->isNotEmpty())
+                    <div class="mb-6">
+                        <div class="mb-3 text-sm font-semibold text-slate-700">Favoris</div>
+                        <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                            @foreach ($favoriteProducts as $product)
+                                @php
+                                    $stockQty = $product->stock?->quantity ?? 0;
+                                    $price = $product->promo_price !== null ? $product->promo_price : $product->sale_price;
+                                @endphp
+                                <div class="flex items-center justify-between rounded-xl border border-slate-200 bg-white px-4 py-3 shadow-sm">
+                                    <div>
+                                        <div class="text-sm font-semibold text-slate-900">{{ $product->name }}</div>
+                                        <div class="text-xs text-slate-500">{{ number_format($price ?? 0, 2) }} · Stock {{ $stockQty }}</div>
+                                    </div>
+                                    <button type="button" wire:click="addProduct({{ $product->id }})" class="app-btn-primary">
+                                        Ajouter
+                                    </button>
+                                </div>
+                            @endforeach
+                        </div>
+                    </div>
+                @endif
+
+                @if ($frequentProducts->isNotEmpty())
+                    <div class="mb-6">
+                        <div class="mb-3 text-sm font-semibold text-slate-700">Produits frequents</div>
+                        <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                            @foreach ($frequentProducts as $product)
+                                @php
+                                    $stockQty = $product->stock?->quantity ?? 0;
+                                    $price = $product->promo_price !== null ? $product->promo_price : $product->sale_price;
+                                @endphp
+                                <div class="flex items-center justify-between rounded-xl border border-slate-200 bg-white px-4 py-3 shadow-sm">
+                                    <div>
+                                        <div class="text-sm font-semibold text-slate-900">{{ $product->name }}</div>
+                                        <div class="text-xs text-slate-500">{{ number_format($price ?? 0, 2) }} · Stock {{ $stockQty }}</div>
+                                    </div>
+                                    <button type="button" wire:click="addProduct({{ $product->id }})" class="app-btn-secondary">
+                                        Ajouter
+                                    </button>
+                                </div>
+                            @endforeach
+                        </div>
+                    </div>
+                @endif
+
                 <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
                     @forelse ($catalogProducts as $product)
                         @php
                             $stockQty = $product->stock?->quantity ?? 0;
                             $price = $product->promo_price !== null ? $product->promo_price : $product->sale_price;
                         @endphp
-                        <button type="button"
+                        <div
+                            role="button"
+                            tabindex="0"
                             wire:click="addProduct({{ $product->id }})"
-                            class="group flex h-full flex-col justify-between rounded-2xl border border-slate-200 bg-white p-4 text-left shadow-sm transition hover:-translate-y-0.5 hover:border-teal-200 hover:shadow-md">
+                            class="group flex h-full cursor-pointer flex-col justify-between rounded-2xl border border-slate-200 bg-white p-4 text-left shadow-sm transition hover:-translate-y-0.5 hover:border-teal-200 hover:shadow-md">
                             <div class="space-y-3">
                                 <div class="relative overflow-hidden rounded-xl border border-slate-100 bg-slate-50">
                                     @if ($product->image_url)
@@ -85,11 +133,18 @@
                                         <div class="text-sm font-semibold text-slate-900">{{ $product->name }}</div>
                                         <div class="text-xs text-slate-500">{{ $product->category?->name ?? 'Sans categorie' }}</div>
                                     </div>
-                                    @if ($product->promo_label || $product->promo_price !== null)
-                                        <span class="rounded-full bg-rose-100 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-rose-700">
-                                            {{ $product->promo_label ?? 'Promo' }}
-                                        </span>
-                                    @endif
+                                    <div class="flex flex-col items-end gap-2">
+                                        @if ($product->promo_label || $product->promo_price !== null)
+                                            <span class="rounded-full bg-rose-100 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-rose-700">
+                                                {{ $product->promo_label ?? 'Promo' }}
+                                            </span>
+                                        @endif
+                                        <button type="button"
+                                            wire:click.stop="toggleFavorite({{ $product->id }})"
+                                            class="rounded-full border border-slate-200 bg-white px-2 py-1 text-xs font-semibold text-slate-500 hover:text-amber-600">
+                                            {{ in_array($product->id, $favoriteIds, true) ? '★' : '☆' }}
+                                        </button>
+                                    </div>
                                 </div>
                             </div>
 
@@ -104,7 +159,7 @@
                                     Stock {{ $stockQty }}
                                 </div>
                             </div>
-                        </button>
+                        </div>
                     @empty
                         <div class="text-sm text-slate-500">Aucun produit trouve.</div>
                     @endforelse

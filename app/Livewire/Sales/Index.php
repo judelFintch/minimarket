@@ -95,6 +95,17 @@ class Index extends Component
         $this->catalogPerPage += 20;
     }
 
+    public function toggleFavorite(int $productId): void
+    {
+        $user = auth()->user();
+
+        if (! $user) {
+            return;
+        }
+
+        $user->favoriteProducts()->toggle($productId);
+    }
+
     public function updatingDateFrom(): void
     {
         $this->resetPage();
@@ -493,6 +504,31 @@ class Index extends Component
             ->orderBy('name')
             ->get();
 
+        $favoriteIds = auth()->user()?->favoriteProducts()->pluck('products.id')->all() ?? [];
+        $favoriteProducts = auth()->user()
+            ? auth()->user()->favoriteProducts()->with(['stock', 'category'])->limit(8)->get()
+            : collect();
+
+        $frequentProductIds = SaleItem::query()
+            ->select('product_id', DB::raw('sum(quantity) as total_qty'))
+            ->join('sales', 'sales.id', '=', 'sale_items.sale_id')
+            ->where('sales.status', 'paid')
+            ->groupBy('product_id')
+            ->orderByDesc('total_qty')
+            ->limit(6)
+            ->pluck('product_id')
+            ->all();
+
+        $frequentProducts = collect();
+        if (! empty($frequentProductIds)) {
+            $ids = implode(',', $frequentProductIds);
+            $frequentProducts = Product::query()
+                ->with(['stock', 'category'])
+                ->whereIn('id', $frequentProductIds)
+                ->orderByRaw("FIELD(id, {$ids})")
+                ->get();
+        }
+
         $todaySalesQuery = Sale::query()->whereDate('sold_at', now()->toDateString())->where('status', 'paid');
         $todayCount = (int) $todaySalesQuery->count();
         $todayTotal = (float) $todaySalesQuery->sum('total_amount');
@@ -529,6 +565,9 @@ class Index extends Component
             'catalogProducts' => $catalogProducts,
             'catalogTotal' => $catalogTotal,
             'categories' => $categories,
+            'favoriteProducts' => $favoriteProducts,
+            'favoriteIds' => $favoriteIds,
+            'frequentProducts' => $frequentProducts,
             'sales' => $sales,
             'totals' => $totals,
             'todayCount' => $todayCount,
