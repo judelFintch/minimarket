@@ -16,22 +16,74 @@ new class extends Component
     }
 }; ?>
 
-<nav class="border-b border-gray-200 bg-white">
-    <div class="mx-auto flex h-16 max-w-6xl items-center justify-between px-4 sm:px-6 lg:px-8">
-        <a href="{{ route('dashboard') }}" wire:navigate class="text-sm font-semibold text-gray-900">
-            miniMaket
-        </a>
+@php
+    $navItems = [
+        ['label' => 'Dashboard', 'route' => 'dashboard'],
+        ['label' => 'Ventes', 'route' => 'sales.index'],
+        ['label' => 'Stock', 'route' => 'stocks.index'],
+        ['label' => 'Produits', 'route' => 'products.index'],
+        ['label' => 'Categories', 'route' => 'categories.index'],
+        ['label' => 'Fournisseurs', 'route' => 'suppliers.index'],
+        ['label' => 'Achats', 'route' => 'purchases.index'],
+    ];
+@endphp
 
-        <div class="flex items-center gap-2 text-sm font-medium text-gray-700">
-            <a href="{{ route('dashboard') }}" wire:navigate class="rounded-md px-3 py-2 hover:bg-gray-50 hover:text-gray-900">Dashboard</a>
-            <a href="{{ route('sales.index') }}" wire:navigate class="rounded-md px-3 py-2 hover:bg-gray-50 hover:text-gray-900">Ventes</a>
-            <a href="{{ route('stocks.index') }}" wire:navigate class="rounded-md px-3 py-2 hover:bg-gray-50 hover:text-gray-900">Stock</a>
-            <a href="{{ route('products.index') }}" wire:navigate class="rounded-md px-3 py-2 hover:bg-gray-50 hover:text-gray-900">Produits</a>
-            <a href="{{ route('categories.index') }}" wire:navigate class="rounded-md px-3 py-2 hover:bg-gray-50 hover:text-gray-900">Categories</a>
-            <a href="{{ route('suppliers.index') }}" wire:navigate class="rounded-md px-3 py-2 hover:bg-gray-50 hover:text-gray-900">Fournisseurs</a>
-            <a href="{{ route('purchases.index') }}" wire:navigate class="rounded-md px-3 py-2 hover:bg-gray-50 hover:text-gray-900">Achats</a>
-            <a href="{{ route('profile') }}" wire:navigate class="rounded-md px-3 py-2 hover:bg-gray-50 hover:text-gray-900">Profil</a>
-            <button wire:click="logout" class="rounded-md px-3 py-2 hover:bg-gray-50 hover:text-gray-900">Deconnexion</button>
+<div>
+    <div class="app-topbar">
+        <a href="{{ route('dashboard') }}" wire:navigate class="app-topbar-title">
+            {{ config('app.name', 'miniMaket') }}
+        </a>
+        <div class="flex items-center gap-2">
+            <a href="{{ route('profile') }}" wire:navigate class="app-btn-ghost">Profil</a>
+            <button wire:click="logout" class="app-btn-ghost">Deconnexion</button>
         </div>
     </div>
-</nav>
+
+    <div class="border-b border-slate-200/70 bg-white/80 px-4 py-3 backdrop-blur lg:hidden">
+        <div class="flex gap-2 overflow-x-auto text-sm font-semibold text-slate-600">
+            @foreach ($navItems as $item)
+                @php $active = request()->routeIs($item['route']); @endphp
+                <a href="{{ route($item['route']) }}"
+                    wire:navigate
+                    class="whitespace-nowrap rounded-full px-4 py-2 {{ $active ? 'bg-teal-50 text-teal-700' : 'bg-slate-100 text-slate-600' }}">
+                    {{ $item['label'] }}
+                </a>
+            @endforeach
+        </div>
+    </div>
+
+    <aside class="app-sidebar">
+        <div class="app-sidebar-header">
+            <x-application-logo class="h-12 w-12 fill-current text-teal-600" />
+            <div>
+                <div class="app-sidebar-title">{{ config('app.name', 'miniMaket') }}</div>
+                <div class="app-sidebar-subtitle">Gestion magasin</div>
+            </div>
+        </div>
+
+        <nav class="app-sidebar-nav">
+            @foreach ($navItems as $item)
+                @php $active = request()->routeIs($item['route']); @endphp
+                <a href="{{ route($item['route']) }}"
+                    wire:navigate
+                    class="app-sidebar-link {{ $active ? 'app-sidebar-link-active' : '' }}">
+                    <span class="app-sidebar-dot {{ $active ? 'app-sidebar-dot-active' : '' }}"></span>
+                    {{ $item['label'] }}
+                </a>
+            @endforeach
+        </nav>
+
+        <div class="border-t border-slate-200/70 px-4 py-4">
+            <div class="flex items-center justify-between rounded-xl bg-slate-50 px-4 py-3 text-sm">
+                <div>
+                    <div class="text-xs text-slate-500">Connecte</div>
+                    <div class="font-semibold text-slate-700">{{ auth()->user()->name ?? 'Utilisateur' }}</div>
+                </div>
+                <div class="flex items-center gap-2">
+                    <a href="{{ route('profile') }}" wire:navigate class="app-btn-ghost">Profil</a>
+                    <button wire:click="logout" class="app-btn-ghost text-rose-600 hover:text-rose-700">Quitter</button>
+                </div>
+            </div>
+        </div>
+    </aside>
+</div>

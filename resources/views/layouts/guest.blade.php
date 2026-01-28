@@ -9,24 +9,47 @@
 
         <!-- Fonts -->
         <link rel="preconnect" href="https://fonts.bunny.net">
-        <link href="https://fonts.bunny.net/css?family=figtree:400,500,600&display=swap" rel="stylesheet" />
+        <link href="https://fonts.bunny.net/css?family=manrope:300,400,500,600,700|sora:400,500,600,700&display=swap" rel="stylesheet" />
 
         <!-- Scripts -->
         @vite(['resources/css/app.css', 'resources/js/app.js'])
     </head>
-    <body class="font-sans text-gray-900 antialiased">
-        <div class="min-h-screen flex flex-col sm:justify-center items-center pt-6 sm:pt-0 bg-gray-100">
-            <div>
-                <a href="/" wire:navigate>
-                    <x-application-logo class="w-20 h-20 fill-current text-gray-500" />
-                </a>
-                <div class="mt-2 text-center text-2xl font-semibold text-gray-800">
-                    {{ config('app.name', 'Laravel') }}
+    <body class="antialiased">
+        <div class="app-auth-shell flex min-h-screen items-center justify-center px-4 py-12">
+            <div class="flex w-full max-w-5xl flex-col items-center gap-10 lg:flex-row lg:items-stretch">
+                <div class="flex w-full flex-col justify-center text-left text-white lg:w-1/2">
+                    <div class="flex items-center gap-3">
+                        <x-application-logo class="h-16 w-16 fill-current text-white/90" />
+                        <div>
+                            <div class="text-sm font-semibold uppercase tracking-widest text-white/70">Plateforme</div>
+                            <div class="text-3xl font-semibold">{{ config('app.name', 'Laravel') }}</div>
+                        </div>
+                    </div>
+                    <p class="mt-6 max-w-md text-sm text-white/70">
+                        Pilotez ventes, stocks et achats depuis un espace clair, rapide et fiable.
+                        Connectez-vous pour acceder au tableau de bord.
+                    </p>
+                    <div class="mt-8 grid gap-4 text-sm text-white/70">
+                        <div class="flex items-center gap-3">
+                            <span class="h-2 w-2 rounded-full bg-teal-300"></span>
+                            Suivi quotidien des ventes et marges.
+                        </div>
+                        <div class="flex items-center gap-3">
+                            <span class="h-2 w-2 rounded-full bg-amber-300"></span>
+                            Controle du stock et alertes rapides.
+                        </div>
+                        <div class="flex items-center gap-3">
+                            <span class="h-2 w-2 rounded-full bg-sky-300"></span>
+                            Achats et fournisseurs centralises.
+                        </div>
+                    </div>
                 </div>
-            </div>
 
-            <div class="w-full sm:max-w-md mt-6 px-6 py-4 bg-white shadow-md overflow-hidden sm:rounded-lg">
-                {{ $slot }}
+                <div class="w-full lg:w-1/2">
+                    <div class="app-auth-card">
+                        {{ $slot }}
+                    </div>
+                </div>
             </div>
         </div>
     </body>

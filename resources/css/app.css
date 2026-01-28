@@ -4,18 +4,224 @@
 
 @layer base {
     :root {
-        --brand-600: 14 116 144;
-        --brand-700: 12 98 122;
+        --brand-500: 13 148 136;
+        --brand-600: 13 116 126;
+        --brand-700: 15 90 94;
         --accent-500: 245 158 11;
+        --ink-900: 15 23 42;
+        --ink-700: 51 65 85;
+        --surface-0: 248 250 252;
+        --surface-1: 255 255 255;
+        --surface-2: 241 245 249;
     }
 
     body {
         font-family: "Manrope", "Segoe UI", sans-serif;
-        background-color: #f8fafc;
-        color: #0f172a;
+        background-color: rgb(var(--surface-0));
+        color: rgb(var(--ink-900));
     }
 
     [x-cloak] {
         display: none !important;
+    }
+
+    h1, h2, h3, h4, h5, h6 {
+        font-family: "Sora", "Manrope", sans-serif;
+        letter-spacing: -0.01em;
+    }
+}
+
+@layer components {
+    .app-shell {
+        min-height: 100vh;
+        background-image:
+            radial-gradient(circle at 10% 10%, rgba(20, 184, 166, 0.16), transparent 45%),
+            radial-gradient(circle at 90% 20%, rgba(250, 204, 21, 0.16), transparent 40%),
+            radial-gradient(circle at 20% 85%, rgba(56, 189, 248, 0.12), transparent 40%);
+        background-color: rgb(var(--surface-0));
+    }
+
+    .app-frame {
+        @apply flex min-h-screen flex-col lg:flex-row;
+    }
+
+    .app-sidebar {
+        @apply hidden w-72 flex-col border-r border-slate-200/70 bg-white/70 backdrop-blur lg:flex;
+    }
+
+    .app-sidebar-header {
+        @apply flex items-center gap-3 border-b border-slate-200/70 px-6 py-5;
+    }
+
+    .app-sidebar-title {
+        @apply text-lg font-semibold text-slate-900;
+    }
+
+    .app-sidebar-subtitle {
+        @apply text-xs uppercase tracking-wider text-slate-500;
+    }
+
+    .app-sidebar-nav {
+        @apply flex flex-1 flex-col gap-2 px-4 py-6;
+    }
+
+    .app-sidebar-link {
+        @apply flex items-center gap-3 rounded-xl px-4 py-2.5 text-sm font-semibold text-slate-600 transition hover:bg-slate-100 hover:text-slate-900;
+    }
+
+    .app-sidebar-link-active {
+        @apply bg-teal-50 text-teal-700 shadow-sm ring-1 ring-teal-100;
+    }
+
+    .app-sidebar-dot {
+        @apply h-2.5 w-2.5 rounded-full bg-slate-300;
+    }
+
+    .app-sidebar-dot-active {
+        @apply bg-teal-500;
+    }
+
+    .app-topbar {
+        @apply flex items-center justify-between border-b border-slate-200/70 bg-white/80 px-4 py-4 backdrop-blur lg:hidden;
+    }
+
+    .app-topbar-title {
+        @apply text-base font-semibold text-slate-900;
+    }
+
+    .app-content {
+        @apply flex min-w-0 flex-1 flex-col;
+    }
+
+    .app-header {
+        @apply border-b border-slate-200/70 bg-white/70 backdrop-blur;
+    }
+
+    .app-header-inner {
+        @apply mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-5 sm:px-6 lg:px-10;
+    }
+
+    .app-main {
+        @apply px-4 pb-16 pt-6 sm:px-6 lg:px-10 lg:pt-8;
+    }
+
+    .app-title {
+        @apply text-3xl font-semibold text-slate-900;
+    }
+
+    .app-subtitle {
+        @apply mt-1 text-sm text-slate-500;
+    }
+
+    .app-card {
+        @apply rounded-2xl border border-slate-200/70 bg-white/85 shadow-sm backdrop-blur;
+    }
+
+    .app-card-header {
+        @apply flex flex-wrap items-center justify-between gap-4 border-b border-slate-200/70 px-6 py-4;
+    }
+
+    .app-card-title {
+        @apply text-lg font-semibold text-slate-900;
+    }
+
+    .app-card-subtitle {
+        @apply text-sm text-slate-500;
+    }
+
+    .app-card-body {
+        @apply px-6 py-5;
+    }
+
+    .app-label {
+        @apply block text-xs font-semibold uppercase tracking-wider text-slate-500;
+    }
+
+    .app-input {
+        @apply mt-2 block w-full rounded-xl border border-slate-200 bg-white/90 px-3.5 py-2.5 text-sm text-slate-900 shadow-sm placeholder:text-slate-400 focus:border-teal-500 focus:ring-4 focus:ring-teal-100 disabled:cursor-not-allowed disabled:opacity-60;
+    }
+
+    .app-textarea {
+        @apply mt-2 block w-full rounded-xl border border-slate-200 bg-white/90 px-3.5 py-2.5 text-sm text-slate-900 shadow-sm placeholder:text-slate-400 focus:border-teal-500 focus:ring-4 focus:ring-teal-100 disabled:cursor-not-allowed disabled:opacity-60;
+    }
+
+    .app-select {
+        @apply mt-2 block w-full rounded-xl border border-slate-200 bg-white/90 px-3.5 py-2.5 text-sm text-slate-900 shadow-sm focus:border-teal-500 focus:ring-4 focus:ring-teal-100 disabled:cursor-not-allowed disabled:opacity-60;
+    }
+
+    .app-btn-primary {
+        @apply inline-flex items-center justify-center rounded-xl bg-teal-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-teal-700 focus:outline-none focus:ring-4 focus:ring-teal-200;
+    }
+
+    .app-btn-secondary {
+        @apply inline-flex items-center justify-center rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50 focus:outline-none focus:ring-4 focus:ring-slate-200;
+    }
+
+    .app-btn-ghost {
+        @apply inline-flex items-center justify-center rounded-xl px-3 py-2 text-sm font-semibold text-slate-600 transition hover:bg-slate-100 hover:text-slate-900;
+    }
+
+    .app-btn-danger {
+        @apply inline-flex items-center justify-center rounded-xl bg-rose-600 px-3.5 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-rose-700 focus:outline-none focus:ring-4 focus:ring-rose-200;
+    }
+
+    .app-badge {
+        @apply inline-flex items-center rounded-full bg-emerald-100 px-2.5 py-0.5 text-xs font-semibold text-emerald-800;
+    }
+
+    .app-table {
+        @apply min-w-full text-sm;
+    }
+
+    .app-table thead {
+        @apply bg-slate-50;
+    }
+
+    .app-table th {
+        @apply px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-600;
+    }
+
+    .app-table td {
+        @apply px-4 py-3 text-slate-700;
+    }
+
+    .app-table tbody tr {
+        @apply border-t border-slate-100;
+    }
+
+    .app-kpi {
+        @apply rounded-2xl border border-slate-200/70 bg-white/85 px-5 py-4 shadow-sm;
+    }
+
+    .app-kpi-label {
+        @apply text-xs uppercase tracking-wider text-slate-500;
+    }
+
+    .app-kpi-value {
+        @apply mt-2 text-2xl font-semibold text-slate-900;
+    }
+
+    .app-kpi-trend {
+        @apply mt-2 text-xs font-semibold text-emerald-600;
+    }
+
+    .app-auth-shell {
+        @apply min-h-screen bg-slate-900 text-white;
+        background-image:
+            radial-gradient(circle at 10% 10%, rgba(20, 184, 166, 0.35), transparent 40%),
+            radial-gradient(circle at 90% 15%, rgba(251, 191, 36, 0.35), transparent 35%),
+            linear-gradient(135deg, rgba(15, 23, 42, 0.95), rgba(30, 41, 59, 0.92));
+    }
+
+    .app-auth-card {
+        @apply w-full max-w-md rounded-3xl border border-white/10 bg-white/95 p-8 text-slate-900 shadow-2xl backdrop-blur;
+    }
+
+    .app-auth-title {
+        @apply text-2xl font-semibold text-slate-900;
+    }
+
+    .app-auth-subtitle {
+        @apply mt-2 text-sm text-slate-500;
     }
 }
