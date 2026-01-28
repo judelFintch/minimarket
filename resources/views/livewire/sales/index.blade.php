@@ -259,6 +259,22 @@
                                 <div class="text-2xl font-semibold">{{ number_format($totals['total'], 2) }}</div>
                             </div>
 
+                            <div class="rounded-xl border border-slate-200 bg-white px-4 py-3">
+                                <div class="text-xs uppercase tracking-wide text-slate-400">Paiement rapide</div>
+                                <div class="mt-2 grid gap-2 sm:grid-cols-2">
+                                    <input type="number" min="0" step="0.01" wire:model.live="amountReceived" class="app-input" placeholder="Montant recu" />
+                                    <div class="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm font-semibold text-slate-700">
+                                        Rendu: {{ number_format($changeDue, 2) }}
+                                    </div>
+                                </div>
+                                <div class="mt-3 flex flex-wrap gap-2">
+                                    <button type="button" wire:click="setAmountReceivedToTotal" class="app-btn-secondary">Montant exact</button>
+                                    <button type="button" wire:click="setAmountReceived({{ $totals['total'] + 5 }})" class="app-btn-secondary">+5</button>
+                                    <button type="button" wire:click="setAmountReceived({{ $totals['total'] + 10 }})" class="app-btn-secondary">+10</button>
+                                    <button type="button" wire:click="setAmountReceived({{ $totals['total'] + 20 }})" class="app-btn-secondary">+20</button>
+                                </div>
+                            </div>
+
                             <div class="grid gap-3 sm:grid-cols-2">
                                 <button type="submit" class="app-btn-primary" x-on:click="window.__receiptWindow = window.open('about:blank', '_blank');">
                                     Encaisser
@@ -275,6 +291,25 @@
                             <button type="button" wire:click="resetForm" class="app-btn-ghost">
                                 Reinitialiser
                             </button>
+
+                            @if ($pendingSales->isNotEmpty())
+                                <div class="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3">
+                                    <div class="text-xs uppercase tracking-wide text-amber-700">Ventes en attente</div>
+                                    <div class="mt-2 space-y-2 text-sm">
+                                        @foreach ($pendingSales as $sale)
+                                            <div class="flex items-center justify-between gap-3">
+                                                <div>
+                                                    <div class="font-semibold text-slate-800">{{ $sale->reference }}</div>
+                                                    <div class="text-xs text-slate-500">{{ $sale->items_count }} articles · {{ number_format($sale->total_amount, 2) }}</div>
+                                                </div>
+                                                <button type="button" wire:click="loadPendingSale({{ $sale->id }})" class="app-btn-secondary">
+                                                    Reprendre
+                                                </button>
+                                            </div>
+                                        @endforeach
+                                    </div>
+                                </div>
+                            @endif
                         </div>
                     </div>
                 </div>

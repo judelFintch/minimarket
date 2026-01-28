@@ -27,6 +27,7 @@ class Index extends Component
     public float $discountRate = 0;
     public float $taxRate = 0;
     public ?int $lastInvoiceId = null;
+    public float $amountReceived = 0;
 
     protected function rules(): array
     {
@@ -169,6 +170,7 @@ class Index extends Component
         $this->reset(['customer_name', 'sold_at', 'items']);
         $this->discountRate = 0;
         $this->taxRate = 0;
+        $this->amountReceived = 0;
         $this->sold_at = now()->format('Y-m-d');
         $this->items = [
             [
@@ -316,6 +318,40 @@ class Index extends Component
         $this->lastInvoiceId = $invoiceId;
         $this->resetForm();
         $this->dispatch('notify', message: 'Vente enregistree.', invoiceId: $this->lastInvoiceId);
+    }
+
+    public function setAmountReceived(float $amount): void
+    {
+        $this->amountReceived = $amount;
+    }
+
+    public function setAmountReceivedToTotal(): void
+    {
+        $totals = $this->calculateTotals($this->items, (float) $this->discountRate, (float) $this->taxRate);
+        $this->amountReceived = $totals['total'];
+    }
+
+    public function loadPendingSale(int $saleId): void
+    {
+        $sale = Sale::query()
+            ->with('items')
+            ->where('status', 'pending')
+            ->findOrFail($saleId);
+
+        $this->customer_name = $sale->customer_name;
+        $this->sold_at = $sale->sold_at?->format('Y-m-d') ?? now()->format('Y-m-d');
+        $this->discountRate = (float) ($sale->discount_rate ?? 0);
+        $this->taxRate = (float) ($sale->tax_rate ?? 0);
+        $this->items = $sale->items->map(function ($item) {
+            return [
+                'product_id' => $item->product_id,
+                'quantity' => (int) $item->quantity,
+                'unit_price' => (float) $item->unit_price,
+                'discount_rate' => (float) ($item->discount_rate ?? 0),
+            ];
+        })->all();
+
+        $this->dispatch('focus-barcode');
     }
 
     public function savePending(): void
@@ -475,6 +511,14 @@ class Index extends Component
         }
 
         $totals = $this->calculateTotals($this->items, (float) $this->discountRate, (float) $this->taxRate);
+        $pendingSales = Sale::query()
+            ->withCount('items')
+            ->where('status', 'pending')
+            ->orderByDesc('sold_at')
+            ->limit(5)
+            ->get();
+
+        $changeDue = max(0, round($this->amountReceived - $totals['total'], 2));
 
         return view('livewire.sales.index', [
             'products' => $products,
@@ -482,6 +526,8 @@ class Index extends Component
             'favoriteProducts' => $favoriteProducts,
             'frequentProducts' => $frequentProducts,
             'totals' => $totals,
+            'pendingSales' => $pendingSales,
+            'changeDue' => $changeDue,
         ])->layout('layouts.app');
     }
 }
