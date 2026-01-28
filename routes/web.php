@@ -9,7 +9,7 @@ use App\Livewire\Stocks\Index as StocksIndex;
 use App\Livewire\Suppliers\Index as SuppliersIndex;
 use Illuminate\Support\Facades\Route;
 
-Route::view('/', 'welcome');
+Route::redirect('/', '/login');
 
 Route::view('dashboard', 'dashboard')
     ->middleware(['auth', 'verified'])
