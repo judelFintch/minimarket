@@ -109,6 +109,14 @@
                         <div class="text-sm text-slate-500">Aucun produit trouve.</div>
                     @endforelse
                 </div>
+
+                @if ($catalogProducts->count() < $catalogTotal)
+                    <div class="mt-6 flex justify-center">
+                        <button type="button" wire:click="loadMoreCatalog" class="app-btn-secondary">
+                            Charger plus
+                        </button>
+                    </div>
+                @endif
             </div>
         </div>
 

@@ -32,6 +32,7 @@ class Index extends Component
     public string $catalogSearch = '';
     public int $catalogCategory = 0;
     public string $catalogStock = '';
+    public int $catalogPerPage = 20;
 
     protected function rules(): array
     {
@@ -74,16 +75,24 @@ class Index extends Component
     public function updatingCatalogSearch(): void
     {
         $this->resetPage();
+        $this->catalogPerPage = 20;
     }
 
     public function updatingCatalogCategory(): void
     {
         $this->resetPage();
+        $this->catalogPerPage = 20;
     }
 
     public function updatingCatalogStock(): void
     {
         $this->resetPage();
+        $this->catalogPerPage = 20;
+    }
+
+    public function loadMoreCatalog(): void
+    {
+        $this->catalogPerPage += 20;
     }
 
     public function updatingDateFrom(): void
@@ -455,7 +464,7 @@ class Index extends Component
                 ->get();
         }
 
-        $catalogProducts = Product::query()
+        $catalogQuery = Product::query()
             ->with(['stock', 'category'])
             ->when($this->catalogSearch !== '', function ($query) {
                 $query->where('name', 'like', '%' . $this->catalogSearch . '%');
@@ -473,8 +482,11 @@ class Index extends Component
                     $stockQuery->where('quantity', '<=', 0);
                 });
             })
-            ->orderBy('name')
-            ->limit(20)
+            ->orderBy('name');
+
+        $catalogTotal = (clone $catalogQuery)->count();
+        $catalogProducts = (clone $catalogQuery)
+            ->limit($this->catalogPerPage)
             ->get();
 
         $categories = \App\Models\Category::query()
@@ -515,6 +527,7 @@ class Index extends Component
             'products' => $products,
             'filteredProducts' => $filteredProducts,
             'catalogProducts' => $catalogProducts,
+            'catalogTotal' => $catalogTotal,
             'categories' => $categories,
             'sales' => $sales,
             'totals' => $totals,
