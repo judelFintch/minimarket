@@ -6,7 +6,29 @@
         if (($event.ctrlKey || $event.metaKey) && $event.key === 'Enter' && $event.shiftKey) { $event.preventDefault(); $wire.savePending(); }
         if (($event.ctrlKey || $event.metaKey) && ($event.key === 'i' || $event.key === 'I')) { $event.preventDefault(); $wire.addItem(); }
     "
+    x-on:notify.window="
+        $dispatch('toast', { message: $event.detail.message, invoiceId: $event.detail.invoiceId })
+    "
 >
+    <div
+        x-data="{ open: false, message: '', invoiceId: null }"
+        x-on:toast.window="
+            message = $event.detail.message || '';
+            invoiceId = $event.detail.invoiceId || null;
+            open = true;
+            setTimeout(() => open = false, 3000);
+        "
+        x-show="open"
+        class="fixed right-6 top-6 z-50 w-72 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-semibold text-emerald-700 shadow-lg"
+        style="display: none;"
+    >
+        <div class="flex items-center justify-between gap-3">
+            <span x-text="message"></span>
+            <template x-if="invoiceId">
+                <a :href="`/invoices/${invoiceId}/receipt`" class="text-emerald-800 underline">Ticket</a>
+            </template>
+        </div>
+    </div>
     <x-slot name="header">
         <div class="flex flex-wrap items-center justify-between gap-4">
             <div>

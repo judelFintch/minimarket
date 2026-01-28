@@ -25,6 +25,7 @@ class Index extends Component
     public string $productSearch = '';
     public float $discountRate = 0;
     public float $taxRate = 0;
+    public ?int $lastInvoiceId = null;
 
     protected function rules(): array
     {
@@ -200,13 +201,14 @@ class Index extends Component
     {
         $validated = $this->validate();
         $validated['items'] = $this->normalizeItemsWithPrices($validated['items']);
+        $invoiceId = null;
 
         $totalsByProduct = [];
         foreach ($validated['items'] as $item) {
             $totalsByProduct[$item['product_id']] = ($totalsByProduct[$item['product_id']] ?? 0) + $item['quantity'];
         }
 
-        DB::transaction(function () use ($validated, $totalsByProduct) {
+        DB::transaction(function () use ($validated, $totalsByProduct, &$invoiceId) {
             $stocks = Stock::query()
                 ->whereIn('product_id', array_keys($totalsByProduct))
                 ->get()
@@ -271,7 +273,7 @@ class Index extends Component
                 ]);
             }
 
-            Invoice::create([
+            $invoice = Invoice::create([
                 'sale_id' => $sale->id,
                 'invoice_number' => 'INV-' . now()->format('YmdHis') . '-' . Str::upper(Str::random(4)),
                 'total_amount' => $totals['total'],
@@ -279,9 +281,13 @@ class Index extends Component
                 'issued_at' => $validated['sold_at'],
                 'due_at' => $validated['sold_at'],
             ]);
+
+            $invoiceId = $invoice->id;
         });
 
+        $this->lastInvoiceId = $invoiceId;
         $this->resetForm();
+        $this->dispatch('notify', message: 'Vente enregistree.', invoiceId: $this->lastInvoiceId);
     }
 
     public function savePending(): void

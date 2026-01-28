@@ -17,4 +17,13 @@ class InvoiceController extends Controller
 
         return $pdf->download('invoice-' . $invoice->invoice_number . '.pdf');
     }
+
+    public function receipt(Invoice $invoice)
+    {
+        $invoice->load(['sale.items.product']);
+
+        return view('invoices.receipt', [
+            'invoice' => $invoice,
+        ]);
+    }
 }

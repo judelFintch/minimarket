@@ -83,6 +83,9 @@
                                         </button>
                                     @endif
                                     @if ($sale->invoice)
+                                        <a href="{{ route('invoices.receipt', $sale->invoice) }}" class="app-btn-ghost text-emerald-600 hover:text-emerald-700">
+                                            Ticket
+                                        </a>
                                         <a href="{{ route('invoices.download', $sale->invoice) }}" class="app-btn-ghost text-slate-600 hover:text-slate-800">
                                             Facture
                                         </a>
