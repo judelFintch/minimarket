@@ -7,7 +7,10 @@
         if (($event.ctrlKey || $event.metaKey) && ($event.key === 'i' || $event.key === 'I')) { $event.preventDefault(); $wire.addItem(); }
     "
     x-on:notify.window="
-        $dispatch('toast', { message: $event.detail.message, invoiceId: $event.detail.invoiceId })
+        $dispatch('toast', { message: $event.detail.message, invoiceId: $event.detail.invoiceId });
+        if ($event.detail.invoiceId) {
+            window.open(`/invoices/${$event.detail.invoiceId}/receipt`, '_blank');
+        }
     "
 >
     <div
