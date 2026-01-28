@@ -9,6 +9,7 @@ use App\Models\SaleItem;
 use App\Models\Stock;
 use App\Models\StockMovement;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 use Livewire\Component;
@@ -509,15 +510,21 @@ class Index extends Component
             ? auth()->user()->favoriteProducts()->with(['stock', 'category'])->limit(8)->get()
             : collect();
 
-        $frequentProductIds = SaleItem::query()
-            ->select('product_id', DB::raw('sum(quantity) as total_qty'))
-            ->join('sales', 'sales.id', '=', 'sale_items.sale_id')
-            ->where('sales.status', 'paid')
-            ->groupBy('product_id')
-            ->orderByDesc('total_qty')
-            ->limit(6)
-            ->pluck('product_id')
-            ->all();
+        $frequentProductIds = [];
+        if (
+            Schema::hasColumns('sale_items', ['product_id', 'sale_id', 'quantity']) &&
+            Schema::hasColumn('sales', 'status')
+        ) {
+            $frequentProductIds = SaleItem::query()
+                ->select('product_id', DB::raw('sum(quantity) as total_qty'))
+                ->join('sales', 'sales.id', '=', 'sale_items.sale_id')
+                ->where('sales.status', 'paid')
+                ->groupBy('product_id')
+                ->orderByDesc('total_qty')
+                ->limit(6)
+                ->pluck('product_id')
+                ->all();
+        }
 
         $frequentProducts = collect();
         if (! empty($frequentProductIds)) {
