@@ -9,7 +9,13 @@
     x-on:notify.window="
         $dispatch('toast', { message: $event.detail.message, invoiceId: $event.detail.invoiceId });
         if ($event.detail.invoiceId) {
-            window.open(`/invoices/${$event.detail.invoiceId}/receipt`, '_blank');
+            if (window.__receiptWindow && !window.__receiptWindow.closed) {
+                window.__receiptWindow.location = `/invoices/${$event.detail.invoiceId}/receipt`;
+                window.__receiptWindow.focus();
+                window.__receiptWindow = null;
+            } else {
+                window.open(`/invoices/${$event.detail.invoiceId}/receipt`, '_blank');
+            }
         }
     "
 >
@@ -211,7 +217,7 @@
                             </div>
 
                             <div class="grid gap-3 sm:grid-cols-2">
-                                <button type="submit" class="app-btn-primary">
+                                <button type="submit" class="app-btn-primary" x-on:click="window.__receiptWindow = window.open('about:blank', '_blank');">
                                     Encaisser
                                 </button>
                                 <button type="button" wire:click="savePending" class="app-btn-secondary">
