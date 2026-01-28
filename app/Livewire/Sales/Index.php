@@ -268,12 +268,13 @@ class Index extends Component
                 'sold_at' => $validated['sold_at'],
             ]);
 
+            $saleItems = [];
             foreach ($validated['items'] as $item) {
                 $lineBase = $item['quantity'] * $item['unit_price'];
                 $lineDiscountAmount = $lineBase * ((float) ($item['discount_rate'] ?? 0) / 100);
                 $lineTotal = $lineBase - $lineDiscountAmount;
 
-                SaleItem::create([
+                $saleItems[] = [
                     'sale_id' => $sale->id,
                     'product_id' => $item['product_id'],
                     'quantity' => $item['quantity'],
@@ -281,26 +282,35 @@ class Index extends Component
                     'discount_rate' => $item['discount_rate'] ?? 0,
                     'discount_amount' => $lineDiscountAmount,
                     'line_total' => $lineTotal,
-                ]);
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ];
+            }
+            if (! empty($saleItems)) {
+                SaleItem::insert($saleItems);
             }
 
+            $movements = [];
             foreach ($totalsByProduct as $productId => $requiredQty) {
                 $stock = $stocks->get($productId) ?? Stock::create([
                     'product_id' => $productId,
                     'quantity' => 0,
                 ]);
 
-                $stock->update([
-                    'quantity' => $stock->quantity - $requiredQty,
-                ]);
+                $stock->decrement('quantity', $requiredQty);
 
-                StockMovement::create([
+                $movements[] = [
                     'product_id' => $productId,
                     'type' => 'out',
                     'quantity' => $requiredQty,
                     'reason' => 'Vente ' . $sale->reference,
                     'occurred_at' => $validated['sold_at'],
-                ]);
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ];
+            }
+            if (! empty($movements)) {
+                StockMovement::insert($movements);
             }
 
             $invoice = Invoice::create([
@@ -375,12 +385,13 @@ class Index extends Component
                 'sold_at' => $validated['sold_at'],
             ]);
 
+            $saleItems = [];
             foreach ($validated['items'] as $item) {
                 $lineBase = $item['quantity'] * $item['unit_price'];
                 $lineDiscountAmount = $lineBase * ((float) ($item['discount_rate'] ?? 0) / 100);
                 $lineTotal = $lineBase - $lineDiscountAmount;
 
-                SaleItem::create([
+                $saleItems[] = [
                     'sale_id' => $sale->id,
                     'product_id' => $item['product_id'],
                     'quantity' => $item['quantity'],
@@ -388,7 +399,12 @@ class Index extends Component
                     'discount_rate' => $item['discount_rate'] ?? 0,
                     'discount_amount' => $lineDiscountAmount,
                     'line_total' => $lineTotal,
-                ]);
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ];
+            }
+            if (! empty($saleItems)) {
+                SaleItem::insert($saleItems);
             }
         });
 
