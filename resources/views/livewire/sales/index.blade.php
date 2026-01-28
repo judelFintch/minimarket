@@ -25,13 +25,15 @@
 
                         <div class="space-y-3">
                             @foreach ($items as $index => $item)
-                                <div class="grid items-end gap-3 rounded-xl border border-slate-200 bg-slate-50/70 p-4 lg:grid-cols-12">
+                                <div class="grid items-end gap-3 rounded-2xl border border-slate-200/80 bg-white p-4 shadow-sm lg:grid-cols-12">
                                     <div class="lg:col-span-5">
                                         <label class="app-label">Produit</label>
                                         <select wire:model.live="items.{{ $index }}.product_id" class="app-select">
                                             <option value="">Selectionner</option>
                                             @foreach ($products as $product)
-                                                <option value="{{ $product->id }}">{{ $product->name }}</option>
+                                                <option value="{{ $product->id }}">
+                                                    {{ $product->name }} · Stock {{ $product->stock?->quantity ?? 0 }}
+                                                </option>
                                             @endforeach
                                         </select>
                                         @error("items.$index.product_id") <p class="mt-1 text-xs text-red-600">{{ $message }}</p> @enderror
@@ -44,15 +46,18 @@
                                     </div>
 
                                     <div class="lg:col-span-3">
-                                        <label class="app-label">Prix unitaire</label>
-                                        <input type="number" step="0.01" min="0" wire:model.live="items.{{ $index }}.unit_price" class="app-input" />
+                                        <div class="flex items-center justify-between">
+                                            <label class="app-label">Prix unitaire</label>
+                                            <span class="text-xs font-semibold text-emerald-600">Auto</span>
+                                        </div>
+                                        <input type="number" step="0.01" min="0" wire:model.live="items.{{ $index }}.unit_price" class="app-input bg-slate-100" readonly />
                                         @error("items.$index.unit_price") <p class="mt-1 text-xs text-red-600">{{ $message }}</p> @enderror
                                     </div>
 
                                     <div class="lg:col-span-2 flex items-center justify-between gap-2">
                                         <div class="text-right">
-                                            <div class="text-xs uppercase tracking-wide text-slate-400">Total</div>
-                                            <div class="text-sm font-semibold text-slate-900">
+                                            <div class="text-xs uppercase tracking-wide text-slate-400">Total ligne</div>
+                                            <div class="text-base font-semibold text-slate-900">
                                                 {{ number_format(((int) ($item['quantity'] ?? 0)) * ((float) ($item['unit_price'] ?? 0)), 2) }}
                                             </div>
                                         </div>

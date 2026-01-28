@@ -61,6 +61,23 @@ class Index extends Component
         ];
     }
 
+    public function updatedItems($value, $name): void
+    {
+        if (! str_ends_with($name, '.product_id')) {
+            return;
+        }
+
+        $index = (int) explode('.', $name)[0];
+
+        if (! $value) {
+            $this->items[$index]['unit_price'] = null;
+            return;
+        }
+
+        $product = Product::query()->select(['id', 'sale_price'])->find($value);
+        $this->items[$index]['unit_price'] = $product?->sale_price ?? 0;
+    }
+
     public function removeItem(int $index): void
     {
         unset($this->items[$index]);
@@ -164,6 +181,7 @@ class Index extends Component
     public function render()
     {
         $products = Product::query()
+            ->with('stock')
             ->orderBy('name')
             ->get();
 
