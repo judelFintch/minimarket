@@ -148,8 +148,8 @@ class Index extends Component
     {
         $products = Product::query()
             ->with(['category', 'stock'])
-            ->when(! $this->showArchived, function ($query) {
-                $query->whereNull('archived_at');
+            ->when($this->showArchived, function ($query) {
+                $query->whereNotNull('archived_at');
             })
             ->when($this->search !== '', function ($query) {
                 $query->where(function ($subQuery) {

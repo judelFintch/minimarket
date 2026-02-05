@@ -92,7 +92,7 @@
                 <div class="flex flex-wrap items-center gap-3">
                     <label class="inline-flex items-center gap-2 text-sm text-slate-600">
                         <input type="checkbox" wire:model.live="showArchived" class="rounded border-slate-300 text-teal-600 focus:ring-teal-500" />
-                        Afficher archives
+                        Uniquement archives
                     </label>
                     <input type="text" wire:model.live.debounce.300ms="search" placeholder="Rechercher..." class="app-input sm:max-w-xs" />
                 </div>
@@ -119,7 +119,14 @@
                     <tbody class="bg-white">
                         @forelse ($products as $product)
                             <tr>
-                                <td class="font-semibold text-slate-900">{{ $product->name }}</td>
+                                <td class="font-semibold text-slate-900">
+                                    <div class="flex items-center gap-2">
+                                        <span>{{ $product->name }}</span>
+                                        @if ($product->archived_at)
+                                            <span class="rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-700">Archive</span>
+                                        @endif
+                                    </div>
+                                </td>
                                 <td>{{ $product->category?->name ?? '—' }}</td>
                                 <td>{{ $product->sku ?? '—' }}</td>
                                 <td>{{ $product->stock?->quantity ?? 0 }}</td>
