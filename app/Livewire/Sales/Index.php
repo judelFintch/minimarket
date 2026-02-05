@@ -28,6 +28,7 @@ class Index extends Component
     public float $taxRate = 0;
     public ?int $lastInvoiceId = null;
     public float $amountReceived = 0;
+    public string $screenMode = 'pc';
 
     protected function rules(): array
     {
@@ -55,11 +56,23 @@ class Index extends Component
                 'discount_rate' => 0,
             ],
         ];
+        $this->screenMode = auth()->user()?->screen_mode ?? 'pc';
     }
 
     public function updatingProductSearch(): void
     {
         $this->resetPage();
+    }
+
+    public function updatedScreenMode(string $value): void
+    {
+        $value = in_array($value, ['pos', 'tablet', 'pc', 'mobile'], true) ? $value : 'pc';
+        $this->screenMode = $value;
+
+        $user = auth()->user();
+        if ($user) {
+            $user->update(['screen_mode' => $value]);
+        }
     }
 
     public function addItem(): void

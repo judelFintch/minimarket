@@ -1,5 +1,5 @@
 @php
-    $screenMode = auth()->user()?->screen_mode ?? 'pc';
+    $screenMode = $screenMode ?? 'pc';
 @endphp
 <div
     class="space-y-8 sales-screen sales-screen-{{ $screenMode }}"
@@ -52,6 +52,15 @@
             <p class="app-subtitle">Gestion des ventes et emission de factures.</p>
             </div>
             <div class="flex flex-wrap items-center gap-2">
+                <div class="flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-600">
+                    <span class="uppercase tracking-wider">Mode ecran</span>
+                    <select wire:model.live="screenMode" class="border-0 bg-transparent p-0 text-xs font-semibold text-slate-700 focus:ring-0">
+                        <option value="pos">POS</option>
+                        <option value="tablet">Tablette</option>
+                        <option value="pc">PC</option>
+                        <option value="mobile">Mobile</option>
+                    </select>
+                </div>
                 <a href="{{ route('sales.history') }}" wire:navigate class="app-btn-secondary">Historique</a>
                 <a href="{{ route('dashboard') }}" wire:navigate class="app-btn-ghost">Dashboard</a>
             </div>
