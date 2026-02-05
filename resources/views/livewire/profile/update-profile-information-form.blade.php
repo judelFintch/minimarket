@@ -10,6 +10,7 @@ new class extends Component
 {
     public string $name = '';
     public string $email = '';
+    public string $screen_mode = 'pc';
 
     /**
      * Mount the component.
@@ -18,6 +19,7 @@ new class extends Component
     {
         $this->name = Auth::user()->name;
         $this->email = Auth::user()->email;
+        $this->screen_mode = Auth::user()->screen_mode ?? 'pc';
     }
 
     /**
@@ -30,6 +32,7 @@ new class extends Component
         $validated = $this->validate([
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'string', 'lowercase', 'email', 'max:255', Rule::unique(User::class)->ignore($user->id)],
+            'screen_mode' => ['required', Rule::in(['pos', 'tablet', 'pc', 'mobile'])],
         ]);
 
         $user->fill($validated);
@@ -102,6 +105,17 @@ new class extends Component
                     @endif
                 </div>
             @endif
+        </div>
+
+        <div>
+            <x-input-label for="screen_mode" :value="__('Affichage par defaut')" />
+            <select wire:model="screen_mode" id="screen_mode" name="screen_mode" class="app-select">
+                <option value="pos">POS (caisse)</option>
+                <option value="tablet">Tablette</option>
+                <option value="pc">PC</option>
+                <option value="mobile">Mobile</option>
+            </select>
+            <x-input-error class="mt-2" :messages="$errors->get('screen_mode')" />
         </div>
 
         <div class="flex items-center gap-4">

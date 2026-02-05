@@ -1,5 +1,8 @@
+@php
+    $screenMode = auth()->user()?->screen_mode ?? 'pc';
+@endphp
 <div
-    class="space-y-8"
+    class="space-y-8 sales-screen sales-screen-{{ $screenMode }}"
     x-data="{ searchCount: {{ $filteredProducts->count() }}, activeIndex: 0 }"
     x-init="$nextTick(() => $refs.barcode?.focus())"
     x-on:keydown.window="
@@ -55,10 +58,10 @@
         </div>
     </x-slot>
 
-    <div class="mx-auto max-w-6xl space-y-8">
-        <form wire:submit.prevent="saveSale" class="grid gap-6 lg:grid-cols-12">
-            <div class="lg:col-span-7">
-                <div class="app-card">
+    <div class="mx-auto max-w-6xl space-y-8 sales-shell">
+        <form wire:submit.prevent="saveSale" class="sales-grid grid gap-6 lg:grid-cols-12">
+            <div class="lg:col-span-7 sales-cart">
+                <div class="app-card sales-card">
                     <div class="app-card-header">
                         <div>
                             <h3 class="app-card-title">Panier</h3>
@@ -67,11 +70,11 @@
                                 Raccourcis: Ctrl/Cmd + Entrer (encaisser), Ctrl/Cmd + Maj + Entrer (attente), Ctrl/Cmd + I (nouvelle ligne)
                             </p>
                         </div>
-                        <div class="flex flex-wrap items-center gap-2">
+                        <div class="flex flex-wrap items-center gap-2 sales-cart-actions">
                             <button type="button" wire:click="addItem" class="app-btn-primary">
                                 Ajouter une ligne
                             </button>
-                            <div class="flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-500">
+                            <div class="flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-500 sales-scan">
                                 <span class="uppercase tracking-wider">Scan</span>
                                 <input
                                     type="text"
@@ -105,7 +108,7 @@
                             </div>
                         @endif
 
-                        <div class="mb-4 grid gap-3 rounded-2xl border border-slate-200/70 bg-slate-50/80 p-4">
+                        <div class="mb-4 grid gap-3 rounded-2xl border border-slate-200/70 bg-slate-50/80 p-4 sales-search">
                             <div>
                                 <label class="app-label">Recherche rapide</label>
                                 <input type="text"
@@ -136,9 +139,9 @@
                             @endif
                         </div>
 
-                        <div class="space-y-3">
+                        <div class="space-y-3 sales-lines">
                             @foreach ($items as $index => $item)
-                                <div class="grid items-end gap-3 rounded-2xl border border-slate-200/80 bg-white p-4 shadow-sm lg:grid-cols-12">
+                                <div class="sales-line grid items-end gap-3 rounded-2xl border border-slate-200/80 bg-white p-4 shadow-sm lg:grid-cols-12">
                                     <div class="lg:col-span-4">
                                         <label class="app-label">Produit</label>
                                         <select wire:model.live="items.{{ $index }}.product_id" class="app-select">
@@ -204,8 +207,8 @@
                 </div>
             </div>
 
-            <div class="lg:col-span-5">
-                <div class="app-card lg:sticky lg:top-24">
+            <div class="lg:col-span-5 sales-summary">
+                <div class="app-card sales-card lg:sticky lg:top-24">
                     <div class="app-card-header">
                         <div>
                             <h3 class="app-card-title">Resume</h3>
