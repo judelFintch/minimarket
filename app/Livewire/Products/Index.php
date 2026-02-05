@@ -5,6 +5,7 @@ namespace App\Livewire\Products;
 use App\Models\Category;
 use App\Models\Product;
 use App\Models\Stock;
+use Illuminate\Support\Carbon;
 use Illuminate\Validation\Rule;
 use Livewire\Component;
 use Livewire\WithPagination;
@@ -24,6 +25,7 @@ class Index extends Component
     public int $stock_quantity = 0;
     public string $search = '';
     public string $deleteError = '';
+    public bool $showArchived = false;
 
     protected function rules(): array
     {
@@ -50,6 +52,11 @@ class Index extends Component
     }
 
     public function updatingSearch(): void
+    {
+        $this->resetPage();
+    }
+
+    public function updatingShowArchived(): void
     {
         $this->resetPage();
     }
@@ -121,16 +128,29 @@ class Index extends Component
             return;
         }
 
-        $product->delete();
+        $product->update([
+            'archived_at' => Carbon::now(),
+        ]);
         $this->deleteError = '';
 
         $this->resetForm();
+    }
+
+    public function restoreProduct(int $productId): void
+    {
+        Product::query()
+            ->whereNotNull('archived_at')
+            ->findOrFail($productId)
+            ->update(['archived_at' => null]);
     }
 
     public function render()
     {
         $products = Product::query()
             ->with(['category', 'stock'])
+            ->when(! $this->showArchived, function ($query) {
+                $query->whereNull('archived_at');
+            })
             ->when($this->search !== '', function ($query) {
                 $query->where(function ($subQuery) {
                     $subQuery->where('name', 'like', '%' . $this->search . '%')

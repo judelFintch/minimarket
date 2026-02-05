@@ -89,7 +89,13 @@
                     <h3 class="app-card-title">Liste des produits</h3>
                     <p class="app-card-subtitle">Recherchez rapidement un produit.</p>
                 </div>
-                <input type="text" wire:model.live.debounce.300ms="search" placeholder="Rechercher..." class="app-input sm:max-w-xs" />
+                <div class="flex flex-wrap items-center gap-3">
+                    <label class="inline-flex items-center gap-2 text-sm text-slate-600">
+                        <input type="checkbox" wire:model.live="showArchived" class="rounded border-slate-300 text-teal-600 focus:ring-teal-500" />
+                        Afficher archives
+                    </label>
+                    <input type="text" wire:model.live.debounce.300ms="search" placeholder="Rechercher..." class="app-input sm:max-w-xs" />
+                </div>
             </div>
 
             @if ($deleteError !== '')
@@ -122,7 +128,11 @@
                                 </td>
                                 <td class="text-right">
                                     <button type="button" wire:click="editProduct({{ $product->id }})" class="app-btn-ghost text-teal-600 hover:text-teal-700">Modifier</button>
-                                    <button type="button" onclick="return confirm('Supprimer ce produit ?') || event.stopImmediatePropagation()" wire:click="deleteProduct({{ $product->id }})" class="app-btn-ghost text-rose-600 hover:text-rose-700">Supprimer</button>
+                                    @if ($product->archived_at)
+                                        <button type="button" wire:click="restoreProduct({{ $product->id }})" class="app-btn-ghost text-amber-600 hover:text-amber-700">Restaurer</button>
+                                    @else
+                                        <button type="button" onclick="return confirm('Archiver ce produit ?') || event.stopImmediatePropagation()" wire:click="deleteProduct({{ $product->id }})" class="app-btn-ghost text-rose-600 hover:text-rose-700">Archiver</button>
+                                    @endif
                                 </td>
                             </tr>
                         @empty

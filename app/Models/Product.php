@@ -21,12 +21,14 @@ class Product extends Model
         'sale_price',
         'promo_label',
         'promo_price',
+        'archived_at',
     ];
 
     protected $casts = [
         'promo_price' => 'decimal:2',
         'sale_price' => 'decimal:2',
         'cost_price' => 'decimal:2',
+        'archived_at' => 'datetime',
     ];
 
     public function category(): BelongsTo
