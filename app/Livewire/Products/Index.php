@@ -123,11 +123,6 @@ class Index extends Component
     {
         $product = Product::query()->findOrFail($productId);
 
-        if ($product->saleItems()->exists() || $product->purchaseItems()->exists()) {
-            $this->deleteError = 'Impossible de supprimer: ce produit est lie a des ventes ou des achats.';
-            return;
-        }
-
         $product->update([
             'archived_at' => Carbon::now(),
         ]);
