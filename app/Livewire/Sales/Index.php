@@ -29,6 +29,7 @@ class Index extends Component
     public ?int $lastInvoiceId = null;
     public float $amountReceived = 0;
     public string $screenMode = 'pc';
+    public bool $checkout = false;
 
     protected function rules(): array
     {
@@ -189,6 +190,7 @@ class Index extends Component
         $this->discountRate = 0;
         $this->taxRate = 0;
         $this->amountReceived = 0;
+        $this->checkout = false;
         $this->sold_at = now()->format('Y-m-d');
         $this->items = [
             [
@@ -346,6 +348,16 @@ class Index extends Component
         $this->lastInvoiceId = $invoiceId;
         $this->resetForm();
         $this->dispatch('notify', message: 'Vente enregistree.', invoiceId: $this->lastInvoiceId);
+    }
+
+    public function startCheckout(): void
+    {
+        $this->checkout = true;
+    }
+
+    public function backToCart(): void
+    {
+        $this->checkout = false;
     }
 
     public function setAmountReceived(float $amount): void

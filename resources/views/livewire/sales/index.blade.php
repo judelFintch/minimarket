@@ -67,15 +67,12 @@
 
     <div class="mx-auto max-w-6xl space-y-8 sales-shell">
         <form wire:submit.prevent="saveSale" class="sales-grid grid gap-6 lg:grid-cols-12">
-            <div class="lg:col-span-7 sales-cart">
+            <div class="lg:col-span-8 space-y-6 sales-cart">
                 <div class="app-card sales-card">
                     <div class="app-card-header">
                         <div>
-                            <h3 class="app-card-title">Panier</h3>
-                            <p class="app-card-subtitle">Ajoutez des articles a la vente.</p>
-                            <p class="mt-1 text-xs text-slate-400">
-                                Raccourcis: Ctrl/Cmd + Entrer (encaisser), Ctrl/Cmd + Maj + Entrer (attente), Ctrl/Cmd + I (nouvelle ligne)
-                            </p>
+                            <h3 class="app-card-title">Catalogue</h3>
+                            <p class="app-card-subtitle">Recherchez et ajoutez rapidement.</p>
                         </div>
                         <div class="flex flex-wrap items-center gap-2 sales-cart-actions">
                             <button type="button" wire:click="addItem" class="app-btn-primary">
@@ -94,11 +91,9 @@
                         </div>
                     </div>
 
-                    <div class="app-card-body">
-                        @error('items') <p class="text-sm text-red-600">{{ $message }}</p> @enderror
-
+                    <div class="app-card-body space-y-4">
                         @if ($favoriteProducts->isNotEmpty() || $frequentProducts->isNotEmpty())
-                            <div class="mb-4">
+                            <div>
                                 <div class="mb-2 text-xs font-semibold uppercase tracking-wider text-slate-500">Raccourcis</div>
                                 <div class="flex flex-wrap gap-2">
                                     @foreach ($favoriteProducts as $product)
@@ -115,7 +110,7 @@
                             </div>
                         @endif
 
-                        <div class="mb-4 grid gap-3 rounded-2xl border border-slate-200/70 bg-slate-50/80 p-4 sales-search">
+                        <div class="grid gap-3 rounded-2xl border border-slate-200/70 bg-slate-50/80 p-4 sales-search">
                             <div>
                                 <label class="app-label">Recherche rapide</label>
                                 <input type="text"
@@ -145,7 +140,19 @@
                                 </div>
                             @endif
                         </div>
+                    </div>
+                </div>
 
+                <div class="app-card sales-card">
+                    <div class="app-card-header">
+                        <div>
+                            <h3 class="app-card-title">Panier</h3>
+                            <p class="app-card-subtitle">Vérifiez les articles avant l'encaissement.</p>
+                        </div>
+                        @error('items') <p class="text-sm text-red-600">{{ $message }}</p> @enderror
+                    </div>
+
+                    <div class="app-card-body">
                         <div class="space-y-3 sales-lines">
                             @foreach ($items as $index => $item)
                                 <div class="sales-line grid items-end gap-3 rounded-2xl border border-slate-200/80 bg-white p-4 shadow-sm lg:grid-cols-12">
@@ -210,119 +217,155 @@
                                 </div>
                             @endforeach
                         </div>
+
+                        <div class="mt-6 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-slate-200/70 bg-slate-50 px-4 py-3">
+                            <div>
+                                <div class="text-xs uppercase tracking-wide text-slate-400">Total provisoire</div>
+                                <div class="text-xl font-semibold text-slate-900">{{ number_format($totals['total'], 2) }}</div>
+                            </div>
+                            <div class="flex flex-wrap gap-2">
+                                <button type="button" wire:click="startCheckout" class="app-btn-primary">
+                                    Passer a l'encaissement
+                                </button>
+                                <button type="button" wire:click="resetForm" class="app-btn-ghost">
+                                    Reinitialiser
+                                </button>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
 
-            <div class="lg:col-span-5 sales-summary">
-                <div class="app-card sales-card lg:sticky lg:top-24">
+            <div class="lg:col-span-4 sales-summary space-y-6">
+                <div class="app-card sales-card">
                     <div class="app-card-header">
                         <div>
                             <h3 class="app-card-title">Resume</h3>
-                            <p class="app-card-subtitle">Infos client et total.</p>
+                            <p class="app-card-subtitle">Totaux en temps reel.</p>
                         </div>
                     </div>
-
-                    <div class="app-card-body">
-                        <div class="space-y-4">
-                            <div>
-                                <label class="app-label">Client</label>
-                                <input type="text" wire:model.live="customer_name" class="app-input" x-ref="customer" />
-                                @error('customer_name') <p class="mt-1 text-xs text-red-600">{{ $message }}</p> @enderror
-                            </div>
-
-                            <div>
-                                <label class="app-label">Date</label>
-                                <input type="date" wire:model.live="sold_at" class="app-input" />
-                                @error('sold_at') <p class="mt-1 text-xs text-red-600">{{ $message }}</p> @enderror
-                            </div>
-
-                            <div class="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3">
-                                <div class="text-xs uppercase tracking-wide text-slate-400">Sous-total</div>
-                                <div class="text-2xl font-semibold text-slate-900">{{ number_format($totals['subtotal'], 2) }}</div>
-                            </div>
-
-                            <div class="grid gap-3 sm:grid-cols-2">
-                                <div>
-                                    <label class="app-label">Remise globale (%)</label>
-                                    <input type="number" min="0" max="100" step="0.01" wire:model.live="discountRate" class="app-input" />
-                                </div>
-                                <div>
-                                    <label class="app-label">TVA (%)</label>
-                                    <input type="number" min="0" max="100" step="0.01" wire:model.live="taxRate" class="app-input" />
-                                </div>
-                            </div>
-
-                            <div class="grid gap-3 sm:grid-cols-2">
-                                <div class="rounded-xl border border-slate-200 bg-white px-4 py-3">
-                                    <div class="text-xs uppercase tracking-wide text-slate-400">Remise</div>
-                                    <div class="text-lg font-semibold text-slate-900">- {{ number_format($totals['discountAmount'], 2) }}</div>
-                                </div>
-                                <div class="rounded-xl border border-slate-200 bg-white px-4 py-3">
-                                    <div class="text-xs uppercase tracking-wide text-slate-400">TVA</div>
-                                    <div class="text-lg font-semibold text-slate-900">+ {{ number_format($totals['taxAmount'], 2) }}</div>
-                                </div>
-                            </div>
-
-                            <div class="rounded-xl border border-slate-200 bg-slate-900 px-4 py-3 text-white">
-                                <div class="text-xs uppercase tracking-wide text-white/70">Total a payer</div>
-                                <div class="text-2xl font-semibold">{{ number_format($totals['total'], 2) }}</div>
-                            </div>
-
+                    <div class="app-card-body space-y-3">
+                        <div class="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3">
+                            <div class="text-xs uppercase tracking-wide text-slate-400">Sous-total</div>
+                            <div class="text-2xl font-semibold text-slate-900">{{ number_format($totals['subtotal'], 2) }}</div>
+                        </div>
+                        <div class="grid gap-3 sm:grid-cols-2">
                             <div class="rounded-xl border border-slate-200 bg-white px-4 py-3">
-                                <div class="text-xs uppercase tracking-wide text-slate-400">Paiement rapide</div>
-                                <div class="mt-2 grid gap-2 sm:grid-cols-2">
-                                    <input type="number" min="0" step="0.01" wire:model.live="amountReceived" class="app-input" placeholder="Montant recu" />
-                                    <div class="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm font-semibold text-slate-700">
-                                        Rendu: {{ number_format($changeDue, 2) }}
-                                    </div>
-                                </div>
-                                <div class="mt-3 flex flex-wrap gap-2">
-                                    <button type="button" wire:click="setAmountReceivedToTotal" class="app-btn-secondary">Montant exact</button>
-                                    <button type="button" wire:click="setAmountReceived({{ $totals['total'] + 5 }})" class="app-btn-secondary">+5</button>
-                                    <button type="button" wire:click="setAmountReceived({{ $totals['total'] + 10 }})" class="app-btn-secondary">+10</button>
-                                    <button type="button" wire:click="setAmountReceived({{ $totals['total'] + 20 }})" class="app-btn-secondary">+20</button>
-                                </div>
+                                <div class="text-xs uppercase tracking-wide text-slate-400">Remise</div>
+                                <div class="text-lg font-semibold text-slate-900">- {{ number_format($totals['discountAmount'], 2) }}</div>
                             </div>
-
-                            <div class="grid gap-3 sm:grid-cols-2">
-                                <button type="submit" class="app-btn-primary" x-on:click="window.__receiptWindow = window.open('about:blank', '_blank');">
-                                    Encaisser
-                                </button>
-                                <button type="button" wire:click="savePending" class="app-btn-secondary">
-                                    Mettre en attente
-                                </button>
+                            <div class="rounded-xl border border-slate-200 bg-white px-4 py-3">
+                                <div class="text-xs uppercase tracking-wide text-slate-400">TVA</div>
+                                <div class="text-lg font-semibold text-slate-900">+ {{ number_format($totals['taxAmount'], 2) }}</div>
                             </div>
-                            @if ($lastInvoiceId)
-                                <a href="{{ route('invoices.receipt', $lastInvoiceId) }}" class="app-btn-ghost text-emerald-700 hover:text-emerald-800">
-                                    Imprimer ticket
-                                </a>
-                            @endif
-                            <button type="button" wire:click="resetForm" class="app-btn-ghost">
-                                Reinitialiser
-                            </button>
-
-                            @if ($pendingSales->isNotEmpty())
-                                <div class="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3">
-                                    <div class="text-xs uppercase tracking-wide text-amber-700">Ventes en attente</div>
-                                    <div class="mt-2 space-y-2 text-sm">
-                                        @foreach ($pendingSales as $sale)
-                                            <div class="flex items-center justify-between gap-3">
-                                                <div>
-                                                    <div class="font-semibold text-slate-800">{{ $sale->reference }}</div>
-                                                    <div class="text-xs text-slate-500">{{ $sale->items_count }} articles · {{ number_format($sale->total_amount, 2) }}</div>
-                                                </div>
-                                                <button type="button" wire:click="loadPendingSale({{ $sale->id }})" class="app-btn-secondary">
-                                                    Reprendre
-                                                </button>
-                                            </div>
-                                        @endforeach
-                                    </div>
-                                </div>
-                            @endif
+                        </div>
+                        <div class="rounded-xl border border-slate-200 bg-slate-900 px-4 py-3 text-white">
+                            <div class="text-xs uppercase tracking-wide text-white/70">Total a payer</div>
+                            <div class="text-2xl font-semibold">{{ number_format($totals['total'], 2) }}</div>
                         </div>
                     </div>
                 </div>
+
+                <div class="app-card sales-card">
+                    <div class="app-card-header">
+                        <div>
+                            <h3 class="app-card-title">Encaissement</h3>
+                            <p class="app-card-subtitle">Finalisez la vente.</p>
+                        </div>
+                        @if ($checkout)
+                            <button type="button" wire:click="backToCart" class="app-btn-ghost">
+                                Retour panier
+                            </button>
+                        @endif
+                    </div>
+
+                    <div class="app-card-body">
+                        @if (! $checkout)
+                            <div class="rounded-2xl border border-dashed border-slate-200 bg-slate-50 px-4 py-6 text-center text-sm text-slate-500">
+                                Validez le panier pour passer a l'encaissement.
+                            </div>
+                        @else
+                            <div class="space-y-4">
+                                <div>
+                                    <label class="app-label">Client</label>
+                                    <input type="text" wire:model.live="customer_name" class="app-input" x-ref="customer" />
+                                    @error('customer_name') <p class="mt-1 text-xs text-red-600">{{ $message }}</p> @enderror
+                                </div>
+
+                                <div>
+                                    <label class="app-label">Date</label>
+                                    <input type="date" wire:model.live="sold_at" class="app-input" />
+                                    @error('sold_at') <p class="mt-1 text-xs text-red-600">{{ $message }}</p> @enderror
+                                </div>
+
+                                <div class="grid gap-3 sm:grid-cols-2">
+                                    <div>
+                                        <label class="app-label">Remise globale (%)</label>
+                                        <input type="number" min="0" max="100" step="0.01" wire:model.live="discountRate" class="app-input" />
+                                    </div>
+                                    <div>
+                                        <label class="app-label">TVA (%)</label>
+                                        <input type="number" min="0" max="100" step="0.01" wire:model.live="taxRate" class="app-input" />
+                                    </div>
+                                </div>
+
+                                <div class="rounded-xl border border-slate-200 bg-white px-4 py-3">
+                                    <div class="text-xs uppercase tracking-wide text-slate-400">Paiement rapide</div>
+                                    <div class="mt-2 grid gap-2 sm:grid-cols-2">
+                                        <input type="number" min="0" step="0.01" wire:model.live="amountReceived" class="app-input" placeholder="Montant recu" />
+                                        <div class="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm font-semibold text-slate-700">
+                                            Rendu: {{ number_format($changeDue, 2) }}
+                                        </div>
+                                    </div>
+                                    <div class="mt-3 flex flex-wrap gap-2">
+                                        <button type="button" wire:click="setAmountReceivedToTotal" class="app-btn-secondary">Montant exact</button>
+                                        <button type="button" wire:click="setAmountReceived({{ $totals['total'] + 5 }})" class="app-btn-secondary">+5</button>
+                                        <button type="button" wire:click="setAmountReceived({{ $totals['total'] + 10 }})" class="app-btn-secondary">+10</button>
+                                        <button type="button" wire:click="setAmountReceived({{ $totals['total'] + 20 }})" class="app-btn-secondary">+20</button>
+                                    </div>
+                                </div>
+
+                                <div class="grid gap-3 sm:grid-cols-2">
+                                    <button type="submit" class="app-btn-primary" x-on:click="window.__receiptWindow = window.open('about:blank', '_blank');">
+                                        Encaisser
+                                    </button>
+                                    <button type="button" wire:click="savePending" class="app-btn-secondary">
+                                        Mettre en attente
+                                    </button>
+                                </div>
+                                @if ($lastInvoiceId)
+                                    <a href="{{ route('invoices.receipt', $lastInvoiceId) }}" class="app-btn-ghost text-emerald-700 hover:text-emerald-800">
+                                        Imprimer ticket
+                                    </a>
+                                @endif
+                            </div>
+                        @endif
+                    </div>
+                </div>
+
+                @if ($pendingSales->isNotEmpty())
+                    <div class="app-card sales-card">
+                        <div class="app-card-header">
+                            <div>
+                                <h3 class="app-card-title">Ventes en attente</h3>
+                                <p class="app-card-subtitle">Reprendre rapidement.</p>
+                            </div>
+                        </div>
+                        <div class="app-card-body space-y-2 text-sm">
+                            @foreach ($pendingSales as $sale)
+                                <div class="flex items-center justify-between gap-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3">
+                                    <div>
+                                        <div class="font-semibold text-slate-800">{{ $sale->reference }}</div>
+                                        <div class="text-xs text-slate-500">{{ $sale->items_count }} articles · {{ number_format($sale->total_amount, 2) }}</div>
+                                    </div>
+                                    <button type="button" wire:click="loadPendingSale({{ $sale->id }})" class="app-btn-secondary">
+                                        Reprendre
+                                    </button>
+                                </div>
+                            @endforeach
+                        </div>
+                    </div>
+                @endif
             </div>
         </form>
     </div>
