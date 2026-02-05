@@ -92,6 +92,12 @@
                 <input type="text" wire:model.live.debounce.300ms="search" placeholder="Rechercher..." class="app-input sm:max-w-xs" />
             </div>
 
+            @if ($deleteError !== '')
+                <div class="mx-6 mt-4 rounded-lg border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
+                    {{ $deleteError }}
+                </div>
+            @endif
+
             <div class="overflow-x-auto">
                 <table class="app-table">
                     <thead>

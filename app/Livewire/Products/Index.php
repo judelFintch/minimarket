@@ -23,6 +23,7 @@ class Index extends Component
     public ?float $sale_price = null;
     public int $stock_quantity = 0;
     public string $search = '';
+    public string $deleteError = '';
 
     protected function rules(): array
     {
@@ -55,6 +56,7 @@ class Index extends Component
 
     public function editProduct(int $productId): void
     {
+        $this->deleteError = '';
         $product = Product::query()->with('stock')->findOrFail($productId);
 
         $this->productId = $product->id;
@@ -70,6 +72,7 @@ class Index extends Component
 
     public function resetForm(): void
     {
+        $this->deleteError = '';
         $this->reset([
             'productId',
             'categoryId',
@@ -85,6 +88,7 @@ class Index extends Component
 
     public function saveProduct(): void
     {
+        $this->deleteError = '';
         $validated = $this->validate();
 
         $product = Product::updateOrCreate(
@@ -110,7 +114,15 @@ class Index extends Component
 
     public function deleteProduct(int $productId): void
     {
-        Product::query()->findOrFail($productId)->delete();
+        $product = Product::query()->findOrFail($productId);
+
+        if ($product->saleItems()->exists() || $product->purchaseItems()->exists()) {
+            $this->deleteError = 'Impossible de supprimer: ce produit est lie a des ventes ou des achats.';
+            return;
+        }
+
+        $product->delete();
+        $this->deleteError = '';
 
         $this->resetForm();
     }
