@@ -75,6 +75,11 @@ class Index extends Component
         }
     }
 
+    public function setScreenMode(string $value): void
+    {
+        $this->updatedScreenMode($value);
+    }
+
     public function addItem(): void
     {
         $this->items[] = [

@@ -1,9 +1,7 @@
-@php
-    $screenMode = $screenMode ?? 'pc';
-@endphp
 <div
-    class="space-y-8 sales-screen sales-screen-{{ $screenMode }}"
-    x-data="{ searchCount: {{ $filteredProducts->count() }}, activeIndex: 0 }"
+    class="space-y-8 sales-screen"
+    x-data="{ searchCount: {{ $filteredProducts->count() }}, activeIndex: 0, screenMode: @entangle('screenMode').live }"
+    x-bind:class="`sales-screen-${screenMode}`"
     x-init="$nextTick(() => $refs.barcode?.focus())"
     x-on:keydown.window="
         if (($event.ctrlKey || $event.metaKey) && $event.key === 'Enter' && ! $event.shiftKey) { $event.preventDefault(); $wire.saveSale(); }
@@ -54,7 +52,7 @@
             <div class="flex flex-wrap items-center gap-2">
                 <div class="flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-600">
                     <span class="uppercase tracking-wider">Mode ecran</span>
-                    <select wire:model.live="screenMode" class="border-0 bg-transparent p-0 text-xs font-semibold text-slate-700 focus:ring-0">
+                    <select wire:model.live="screenMode" wire:change="setScreenMode($event.target.value)" class="border-0 bg-transparent p-0 text-xs font-semibold text-slate-700 focus:ring-0">
                         <option value="pos">POS</option>
                         <option value="tablet">Tablette</option>
                         <option value="pc">PC</option>
