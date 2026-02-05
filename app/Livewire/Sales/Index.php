@@ -518,12 +518,25 @@ class Index extends Component
 
         $frequentProducts = collect();
         if (! empty($frequentProductIds)) {
-            $ids = implode(',', $frequentProductIds);
-            $frequentProducts = Product::query()
+            $frequentProductsQuery = Product::query()
                 ->with('stock')
-                ->whereIn('id', $frequentProductIds)
-                ->orderByRaw("FIELD(id, {$ids})")
-                ->get();
+                ->whereIn('id', $frequentProductIds);
+
+            if (DB::getDriverName() === 'mysql') {
+                $ids = implode(',', $frequentProductIds);
+                $frequentProductsQuery->orderByRaw("FIELD(id, {$ids})");
+            } else {
+                $caseSql = 'CASE id ';
+                $bindings = [];
+                foreach (array_values($frequentProductIds) as $index => $productId) {
+                    $caseSql .= 'WHEN ? THEN ' . $index . ' ';
+                    $bindings[] = $productId;
+                }
+                $caseSql .= 'END';
+                $frequentProductsQuery->orderByRaw($caseSql, $bindings);
+            }
+
+            $frequentProducts = $frequentProductsQuery->get();
         }
 
         $totals = $this->calculateTotals($this->items, (float) $this->discountRate, (float) $this->taxRate);
