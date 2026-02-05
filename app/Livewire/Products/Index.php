@@ -143,9 +143,7 @@ class Index extends Component
     {
         $products = Product::query()
             ->with(['category', 'stock'])
-            ->when($this->showArchived, function ($query) {
-                $query->whereNotNull('archived_at');
-            })
+            ->whereNull('archived_at')
             ->when($this->search !== '', function ($query) {
                 $query->where(function ($subQuery) {
                     $subQuery->where('name', 'like', '%' . $this->search . '%')
@@ -156,12 +154,29 @@ class Index extends Component
             ->orderBy('name')
             ->paginate(10);
 
+        $archivedProducts = collect();
+        if ($this->showArchived) {
+            $archivedProducts = Product::query()
+                ->with(['category', 'stock'])
+                ->whereNotNull('archived_at')
+                ->when($this->search !== '', function ($query) {
+                    $query->where(function ($subQuery) {
+                        $subQuery->where('name', 'like', '%' . $this->search . '%')
+                            ->orWhere('sku', 'like', '%' . $this->search . '%')
+                            ->orWhere('barcode', 'like', '%' . $this->search . '%');
+                    });
+                })
+                ->orderBy('name')
+                ->paginate(10, pageName: 'archived');
+        }
+
         $categories = Category::query()
             ->orderBy('name')
             ->get();
 
         return view('livewire.products.index', [
             'products' => $products,
+            'archivedProducts' => $archivedProducts,
             'categories' => $categories,
         ])->layout('layouts.app');
     }

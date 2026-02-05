@@ -92,7 +92,7 @@
                 <div class="flex flex-wrap items-center gap-3">
                     <label class="inline-flex items-center gap-2 text-sm text-slate-600">
                         <input type="checkbox" wire:model.live="showArchived" class="rounded border-slate-300 text-teal-600 focus:ring-teal-500" />
-                        Uniquement archives
+                        Afficher archives
                     </label>
                     <input type="text" wire:model.live.debounce.300ms="search" placeholder="Rechercher..." class="app-input sm:max-w-xs" />
                 </div>
@@ -119,14 +119,7 @@
                     <tbody class="bg-white">
                         @forelse ($products as $product)
                             <tr>
-                                <td class="font-semibold text-slate-900">
-                                    <div class="flex items-center gap-2">
-                                        <span>{{ $product->name }}</span>
-                                        @if ($product->archived_at)
-                                            <span class="rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-700">Archive</span>
-                                        @endif
-                                    </div>
-                                </td>
+                                <td class="font-semibold text-slate-900">{{ $product->name }}</td>
                                 <td>{{ $product->category?->name ?? '—' }}</td>
                                 <td>{{ $product->sku ?? '—' }}</td>
                                 <td>{{ $product->stock?->quantity ?? 0 }}</td>
@@ -135,11 +128,7 @@
                                 </td>
                                 <td class="text-right">
                                     <button type="button" wire:click="editProduct({{ $product->id }})" class="app-btn-ghost text-teal-600 hover:text-teal-700">Modifier</button>
-                                    @if ($product->archived_at)
-                                        <button type="button" wire:click="restoreProduct({{ $product->id }})" class="app-btn-ghost text-amber-600 hover:text-amber-700">Restaurer</button>
-                                    @else
-                                        <button type="button" onclick="return confirm('Archiver ce produit ?') || event.stopImmediatePropagation()" wire:click="deleteProduct({{ $product->id }})" class="app-btn-ghost text-rose-600 hover:text-rose-700">Archiver</button>
-                                    @endif
+                                    <button type="button" onclick="return confirm('Archiver ce produit ?') || event.stopImmediatePropagation()" wire:click="deleteProduct({{ $product->id }})" class="app-btn-ghost text-rose-600 hover:text-rose-700">Archiver</button>
                                 </td>
                             </tr>
                         @empty
@@ -155,5 +144,55 @@
                 {{ $products->links() }}
             </div>
         </div>
+
+        @if ($showArchived)
+            <div class="app-card">
+                <div class="app-card-header">
+                    <div>
+                        <h3 class="app-card-title">Produits archives</h3>
+                        <p class="app-card-subtitle">Produits archives uniquement.</p>
+                    </div>
+                </div>
+
+                <div class="overflow-x-auto">
+                    <table class="app-table">
+                        <thead>
+                            <tr>
+                                <th>Produit</th>
+                                <th>Categorie</th>
+                                <th>SKU</th>
+                                <th>Stock</th>
+                                <th>Prix vente</th>
+                                <th class="text-right">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody class="bg-white">
+                            @forelse ($archivedProducts as $product)
+                                <tr>
+                                    <td class="font-semibold text-slate-900">{{ $product->name }}</td>
+                                    <td>{{ $product->category?->name ?? '—' }}</td>
+                                    <td>{{ $product->sku ?? '—' }}</td>
+                                    <td>{{ $product->stock?->quantity ?? 0 }}</td>
+                                    <td>
+                                        {{ $product->sale_price !== null ? number_format($product->sale_price, 2) : '—' }}
+                                    </td>
+                                    <td class="text-right">
+                                        <button type="button" wire:click="restoreProduct({{ $product->id }})" class="app-btn-ghost text-amber-600 hover:text-amber-700">Restaurer</button>
+                                    </td>
+                                </tr>
+                            @empty
+                                <tr>
+                                    <td colspan="6" class="px-4 py-6 text-center text-sm text-slate-500">Aucun produit archive.</td>
+                                </tr>
+                            @endforelse
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="px-6 py-4">
+                    {{ $archivedProducts->links() }}
+                </div>
+            </div>
+        @endif
     </div>
 </div>
