@@ -22,6 +22,7 @@ class Index extends Component
     public ?string $unit = null;
     public ?float $cost_price = null;
     public ?float $sale_price = null;
+    public string $currency = 'CDF';
     public int $stock_quantity = 0;
     public string $search = '';
     public string $deleteError = '';
@@ -47,6 +48,7 @@ class Index extends Component
             'unit' => ['nullable', 'string', 'max:50'],
             'cost_price' => ['nullable', 'numeric', 'min:0'],
             'sale_price' => ['nullable', 'numeric', 'min:0'],
+            'currency' => ['required', 'string', 'size:3', Rule::in(['CDF', 'USD', 'EUR'])],
             'stock_quantity' => ['required', 'integer', 'min:0'],
         ];
     }
@@ -74,6 +76,7 @@ class Index extends Component
         $this->unit = $product->unit;
         $this->cost_price = $product->cost_price;
         $this->sale_price = $product->sale_price;
+        $this->currency = $product->currency ?? 'CDF';
         $this->stock_quantity = $product->stock?->quantity ?? 0;
     }
 
@@ -89,6 +92,7 @@ class Index extends Component
             'unit',
             'cost_price',
             'sale_price',
+            'currency',
             'stock_quantity',
         ]);
     }
@@ -108,6 +112,7 @@ class Index extends Component
                 'unit' => $validated['unit'],
                 'cost_price' => $validated['cost_price'],
                 'sale_price' => $validated['sale_price'],
+                'currency' => $validated['currency'],
             ]
         );
 

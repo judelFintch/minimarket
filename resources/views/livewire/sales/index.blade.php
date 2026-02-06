@@ -75,9 +75,6 @@
                             <p class="app-card-subtitle">Recherchez et ajoutez rapidement.</p>
                         </div>
                         <div class="flex flex-wrap items-center gap-2 sales-cart-actions">
-                            <button type="button" wire:click="addItem" class="app-btn-primary">
-                                Ajouter une ligne
-                            </button>
                             <div class="flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-500 sales-scan">
                                 <span class="uppercase tracking-wider">Scan</span>
                                 <input
@@ -85,6 +82,7 @@
                                     wire:model.live.debounce.300ms="barcodeInput"
                                     x-ref="barcode"
                                     placeholder="Code-barres"
+                                    x-on:keydown.enter.prevent
                                     class="w-28 border-0 bg-transparent p-0 text-xs text-slate-700 focus:ring-0"
                                 />
                             </div>
@@ -97,12 +95,12 @@
                                 <div class="mb-2 text-xs font-semibold uppercase tracking-wider text-slate-500">Raccourcis</div>
                                 <div class="flex flex-wrap gap-2">
                                     @foreach ($favoriteProducts as $product)
-                                        <button type="button" wire:click="addProduct({{ $product->id }})" class="rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-xs font-semibold text-amber-700">
+                                        <button type="button" wire:click="selectProduct({{ $product->id }})" class="rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-xs font-semibold text-amber-700">
                                             ★ {{ $product->name }}
                                         </button>
                                     @endforeach
                                     @foreach ($frequentProducts as $product)
-                                        <button type="button" wire:click="addProduct({{ $product->id }})" class="rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-semibold text-slate-600">
+                                        <button type="button" wire:click="selectProduct({{ $product->id }})" class="rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-semibold text-slate-600">
                                             {{ $product->name }}
                                         </button>
                                     @endforeach
@@ -118,6 +116,7 @@
                                     placeholder="Nom du produit"
                                     class="app-input"
                                     x-ref="productSearch"
+                                    x-on:keydown.enter.prevent
                                     x-on:keydown.down.prevent="if (searchCount > 0) { activeIndex = Math.min(activeIndex + 1, searchCount - 1); }"
                                     x-on:keydown.up.prevent="if (searchCount > 0) { activeIndex = Math.max(activeIndex - 1, 0); }"
                                     x-on:keydown.enter.prevent="if (searchCount > 0) { document.getElementById('search-item-' + activeIndex)?.click(); }"
@@ -128,7 +127,7 @@
                                     @forelse ($filteredProducts as $product)
                                         <button type="button"
                                             id="search-item-{{ $loop->index }}"
-                                            wire:click="addProduct({{ $product->id }})"
+                                            wire:click="selectProduct({{ $product->id }})"
                                             class="app-btn-secondary justify-between"
                                             :class="activeIndex === {{ $loop->index }} ? 'ring-2 ring-teal-300' : ''">
                                             <span>{{ $product->name }}</span>
@@ -146,86 +145,133 @@
                 <div class="app-card sales-card">
                     <div class="app-card-header">
                         <div>
+                            <h3 class="app-card-title">Ajout au panier</h3>
+                            <p class="app-card-subtitle">Selectionnez l'article et ajoutez-le au panier.</p>
+                        </div>
+                        @error('selectedProductId') <p class="text-sm text-red-600">{{ $message }}</p> @enderror
+                    </div>
+
+                    <div class="app-card-body space-y-4">
+                            <div class="grid gap-3 sm:grid-cols-2">
+                                <div class="sm:col-span-2">
+                                    <label class="app-label">Produit</label>
+                                    <select wire:model.live="selectedProductId" class="app-select">
+                                        <option value="">Selectionner</option>
+                                        @foreach ($products as $product)
+                                            <option value="{{ $product->id }}">
+                                                {{ $product->name }} · Stock {{ $product->stock?->quantity ?? 0 }}
+                                            </option>
+                                        @endforeach
+                                    </select>
+                                </div>
+
+                            <div>
+                                <label class="app-label">Quantite</label>
+                                <div class="flex items-center gap-2">
+                                    <button type="button" wire:click="decrementSelectedQuantity" class="h-9 w-9 rounded-xl border border-slate-200 bg-white text-lg font-semibold text-slate-600 hover:bg-slate-50">
+                                        -
+                                    </button>
+                                    <input type="number" min="1" wire:model.live="selectedQuantity" class="app-input" />
+                                    <button type="button" wire:click="incrementSelectedQuantity" class="h-9 w-9 rounded-xl border border-slate-200 bg-white text-lg font-semibold text-slate-600 hover:bg-slate-50">
+                                        +
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div>
+                                <div class="flex items-center justify-between">
+                                    <label class="app-label">Prix unitaire</label>
+                                    <span class="text-xs font-semibold text-emerald-600">Auto</span>
+                                </div>
+                                <input type="number" step="0.01" min="0" wire:model.live="selectedUnitPrice" class="app-input bg-slate-100" readonly />
+                                <div class="mt-1 text-xs text-slate-500">
+                                    Devise: {{ $selectedProductId ? ($productsById->get($selectedProductId)?->currency ?? 'CDF') : 'CDF' }}
+                                </div>
+                            </div>
+
+                            <div>
+                                <label class="app-label">Remise %</label>
+                                <input type="number" min="0" max="100" step="0.01" wire:model.live="selectedDiscountRate" class="app-input" />
+                            </div>
+                        </div>
+
+                        <div class="flex flex-wrap items-center gap-2">
+                            <button type="button" wire:click="addToCart" class="app-btn-primary">
+                                Ajouter au panier
+                            </button>
+                            <button type="button" wire:click="resetSelectedItemForm" class="app-btn-ghost">
+                                Reinitialiser
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="app-card sales-card">
+                    <div class="app-card-header">
+                        <div>
                             <h3 class="app-card-title">Panier</h3>
-                            <p class="app-card-subtitle">Vérifiez les articles avant l'encaissement.</p>
+                            <p class="app-card-subtitle">Recap des articles choisis.</p>
                         </div>
                         @error('items') <p class="text-sm text-red-600">{{ $message }}</p> @enderror
                     </div>
 
                     <div class="app-card-body">
-                        <div class="space-y-3 sales-lines">
-                            @foreach ($items as $index => $item)
-                                <div class="sales-line grid items-end gap-3 rounded-2xl border border-slate-200/80 bg-white p-4 shadow-sm sm:grid-cols-12">
-                                    <div class="sm:col-span-4">
-                                        <label class="app-label">Produit</label>
-                                        <select wire:model.live="items.{{ $index }}.product_id" class="app-select">
-                                            <option value="">Selectionner</option>
-                                            @foreach ($products as $product)
-                                                <option value="{{ $product->id }}">
-                                                    {{ $product->name }} · Stock {{ $product->stock?->quantity ?? 0 }}
-                                                </option>
-                                            @endforeach
-                                        </select>
-                                        @error("items.$index.product_id") <p class="mt-1 text-xs text-red-600">{{ $message }}</p> @enderror
+                                @if (empty($items))
+                                    <div class="rounded-2xl border border-dashed border-slate-200 bg-slate-50 px-4 py-6 text-center text-sm text-slate-500">
+                                        Aucun article dans le panier pour le moment.
                                     </div>
+                                @else
+                            <div class="space-y-3 sales-lines">
+                                @foreach ($items as $index => $item)
+                                    @php
+                                        $product = $productsById->get($item['product_id']);
+                                        $lineBase = ((int) ($item['quantity'] ?? 0)) * ((float) ($item['unit_price'] ?? 0));
+                                        $lineDiscount = $lineBase * (((float) ($item['discount_rate'] ?? 0)) / 100);
+                                        $lineTotal = $lineBase - $lineDiscount;
+                                    @endphp
+                                    <div class="flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-slate-200/80 bg-white p-4 shadow-sm">
+                                        <div class="min-w-0">
+                                            <div class="text-sm font-semibold text-slate-900">{{ $product?->name ?? 'Produit' }}</div>
+                                            <div class="mt-1 text-xs text-slate-500">
+                                                PU {{ number_format((float) ($item['unit_price'] ?? 0), 2) }} {{ $product?->currency ?? 'CDF' }}
+                                                · Remise {{ number_format((float) ($item['discount_rate'] ?? 0), 2) }}%
+                                            </div>
+                                        </div>
 
-                                    <div class="sm:col-span-2">
-                                        <label class="app-label">Quantite</label>
                                         <div class="flex items-center gap-2">
                                             <button type="button" wire:click="decrementQuantity({{ $index }})" class="h-9 w-9 rounded-xl border border-slate-200 bg-white text-lg font-semibold text-slate-600 hover:bg-slate-50">
                                                 -
                                             </button>
-                                            <input type="number" min="1" wire:model.live="items.{{ $index }}.quantity" class="app-input" />
+                                            <input type="number" min="1" wire:model.live="items.{{ $index }}.quantity" class="app-input w-20" />
                                             <button type="button" wire:click="incrementQuantity({{ $index }})" class="h-9 w-9 rounded-xl border border-slate-200 bg-white text-lg font-semibold text-slate-600 hover:bg-slate-50">
                                                 +
                                             </button>
                                         </div>
-                                        @error("items.$index.quantity") <p class="mt-1 text-xs text-red-600">{{ $message }}</p> @enderror
-                                    </div>
 
-                                    <div class="sm:col-span-2">
-                                        <div class="flex items-center justify-between">
-                                            <label class="app-label">Prix unitaire</label>
-                                            <span class="text-xs font-semibold text-emerald-600">Auto</span>
-                                        </div>
-                                        <input type="number" step="0.01" min="0" wire:model.live="items.{{ $index }}.unit_price" class="app-input bg-slate-100" readonly />
-                                        @error("items.$index.unit_price") <p class="mt-1 text-xs text-red-600">{{ $message }}</p> @enderror
-                                    </div>
-
-                                    <div class="sm:col-span-2">
-                                        <label class="app-label">Remise %</label>
-                                        <input type="number" min="0" max="100" step="0.01" wire:model.live="items.{{ $index }}.discount_rate" class="app-input" />
-                                        @error("items.$index.discount_rate") <p class="mt-1 text-xs text-red-600">{{ $message }}</p> @enderror
-                                    </div>
-
-                                    <div class="sm:col-span-2 flex items-center justify-between gap-2">
                                         <div class="text-right">
-                                            <div class="text-xs uppercase tracking-wide text-slate-400">Total ligne</div>
-                                            <div class="text-base font-semibold text-slate-900">
-                                                @php
-                                                    $lineBase = ((int) ($item['quantity'] ?? 0)) * ((float) ($item['unit_price'] ?? 0));
-                                                    $lineDiscount = $lineBase * (((float) ($item['discount_rate'] ?? 0)) / 100);
-                                                    $lineTotal = $lineBase - $lineDiscount;
-                                                @endphp
-                                                {{ number_format($lineTotal, 2) }}
-                                            </div>
+                                            <div class="text-xs uppercase tracking-wide text-slate-400">Total</div>
+                                            <div class="text-base font-semibold text-slate-900">{{ number_format($lineTotal, 2) }} {{ $product?->currency ?? 'CDF' }}</div>
+                                            <button type="button" wire:click="removeItem({{ $index }})" class="text-xs font-semibold text-rose-600 hover:text-rose-700">
+                                                Retirer
+                                            </button>
                                         </div>
-                                        <button type="button" wire:click="removeItem({{ $index }})" class="text-xs font-semibold text-rose-600 hover:text-rose-700">
-                                            Retirer
-                                        </button>
                                     </div>
-                                </div>
-                            @endforeach
-                        </div>
+                                @endforeach
+                            </div>
+                        @endif
 
                         <div class="mt-6 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-slate-200/70 bg-slate-50 px-4 py-3">
                             <div>
                                 <div class="text-xs uppercase tracking-wide text-slate-400">Total provisoire</div>
-                                <div class="text-xl font-semibold text-slate-900">{{ number_format($totals['total'], 2) }}</div>
+                                <div class="text-xl font-semibold text-slate-900">{{ number_format($totals['total'], 2) }} {{ $cartCurrency }}</div>
+                                <div class="mt-1 text-xs text-slate-500">Ajoutez tous les articles, puis validez le panier.</div>
+                                @if ($hasMixedCurrency)
+                                    <div class="mt-1 text-xs font-semibold text-rose-600">Panier mixte: utilisez une seule devise.</div>
+                                @endif
                             </div>
                             <div class="flex flex-wrap gap-2">
-                                <button type="button" wire:click="startCheckout" class="app-btn-primary">
-                                    Passer a l'encaissement
+                                <button type="submit" class="app-btn-primary" x-on:click="window.__receiptWindow = window.open('about:blank', '_blank');" @disabled($hasMixedCurrency)>
+                                    Valider le panier
                                 </button>
                                 <button type="button" wire:click="resetForm" class="app-btn-ghost">
                                     Reinitialiser
@@ -247,99 +293,22 @@
                     <div class="app-card-body space-y-3">
                         <div class="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3">
                             <div class="text-xs uppercase tracking-wide text-slate-400">Sous-total</div>
-                            <div class="text-2xl font-semibold text-slate-900">{{ number_format($totals['subtotal'], 2) }}</div>
+                            <div class="text-2xl font-semibold text-slate-900">{{ number_format($totals['subtotal'], 2) }} {{ $cartCurrency }}</div>
                         </div>
                         <div class="grid gap-3 sm:grid-cols-2">
                             <div class="rounded-xl border border-slate-200 bg-white px-4 py-3">
                                 <div class="text-xs uppercase tracking-wide text-slate-400">Remise</div>
-                                <div class="text-lg font-semibold text-slate-900">- {{ number_format($totals['discountAmount'], 2) }}</div>
+                                <div class="text-lg font-semibold text-slate-900">- {{ number_format($totals['discountAmount'], 2) }} {{ $cartCurrency }}</div>
                             </div>
                             <div class="rounded-xl border border-slate-200 bg-white px-4 py-3">
                                 <div class="text-xs uppercase tracking-wide text-slate-400">TVA</div>
-                                <div class="text-lg font-semibold text-slate-900">+ {{ number_format($totals['taxAmount'], 2) }}</div>
+                                <div class="text-lg font-semibold text-slate-900">+ {{ number_format($totals['taxAmount'], 2) }} {{ $cartCurrency }}</div>
                             </div>
                         </div>
                         <div class="rounded-xl border border-slate-200 bg-slate-900 px-4 py-3 text-white">
                             <div class="text-xs uppercase tracking-wide text-white/70">Total a payer</div>
-                            <div class="text-2xl font-semibold">{{ number_format($totals['total'], 2) }}</div>
+                            <div class="text-2xl font-semibold">{{ number_format($totals['total'], 2) }} {{ $cartCurrency }}</div>
                         </div>
-                    </div>
-                </div>
-
-                <div class="app-card sales-card">
-                    <div class="app-card-header">
-                        <div>
-                            <h3 class="app-card-title">Encaissement</h3>
-                            <p class="app-card-subtitle">Finalisez la vente.</p>
-                        </div>
-                        @if ($checkout)
-                            <button type="button" wire:click="backToCart" class="app-btn-ghost">
-                                Retour panier
-                            </button>
-                        @endif
-                    </div>
-
-                    <div class="app-card-body">
-                        @if (! $checkout)
-                            <div class="rounded-2xl border border-dashed border-slate-200 bg-slate-50 px-4 py-6 text-center text-sm text-slate-500">
-                                Validez le panier pour passer a l'encaissement.
-                            </div>
-                        @else
-                            <div class="space-y-4">
-                                <div>
-                                    <label class="app-label">Client</label>
-                                    <input type="text" wire:model.live="customer_name" class="app-input" x-ref="customer" />
-                                    @error('customer_name') <p class="mt-1 text-xs text-red-600">{{ $message }}</p> @enderror
-                                </div>
-
-                                <div>
-                                    <label class="app-label">Date</label>
-                                    <input type="date" wire:model.live="sold_at" class="app-input" />
-                                    @error('sold_at') <p class="mt-1 text-xs text-red-600">{{ $message }}</p> @enderror
-                                </div>
-
-                                <div class="grid gap-3 sm:grid-cols-2">
-                                    <div>
-                                        <label class="app-label">Remise globale (%)</label>
-                                        <input type="number" min="0" max="100" step="0.01" wire:model.live="discountRate" class="app-input" />
-                                    </div>
-                                    <div>
-                                        <label class="app-label">TVA (%)</label>
-                                        <input type="number" min="0" max="100" step="0.01" wire:model.live="taxRate" class="app-input" />
-                                    </div>
-                                </div>
-
-                                <div class="rounded-xl border border-slate-200 bg-white px-4 py-3">
-                                    <div class="text-xs uppercase tracking-wide text-slate-400">Paiement rapide</div>
-                                    <div class="mt-2 grid gap-2 sm:grid-cols-2">
-                                        <input type="number" min="0" step="0.01" wire:model.live="amountReceived" class="app-input" placeholder="Montant recu" />
-                                        <div class="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm font-semibold text-slate-700">
-                                            Rendu: {{ number_format($changeDue, 2) }}
-                                        </div>
-                                    </div>
-                                    <div class="mt-3 flex flex-wrap gap-2">
-                                        <button type="button" wire:click="setAmountReceivedToTotal" class="app-btn-secondary">Montant exact</button>
-                                        <button type="button" wire:click="setAmountReceived({{ $totals['total'] + 5 }})" class="app-btn-secondary">+5</button>
-                                        <button type="button" wire:click="setAmountReceived({{ $totals['total'] + 10 }})" class="app-btn-secondary">+10</button>
-                                        <button type="button" wire:click="setAmountReceived({{ $totals['total'] + 20 }})" class="app-btn-secondary">+20</button>
-                                    </div>
-                                </div>
-
-                                <div class="grid gap-3 sm:grid-cols-2">
-                                    <button type="submit" class="app-btn-primary" x-on:click="window.__receiptWindow = window.open('about:blank', '_blank');">
-                                        Encaisser
-                                    </button>
-                                    <button type="button" wire:click="savePending" class="app-btn-secondary">
-                                        Mettre en attente
-                                    </button>
-                                </div>
-                                @if ($lastInvoiceId)
-                                    <a href="{{ route('invoices.receipt', $lastInvoiceId) }}" class="app-btn-ghost text-emerald-700 hover:text-emerald-800">
-                                        Imprimer ticket
-                                    </a>
-                                @endif
-                            </div>
-                        @endif
                     </div>
                 </div>
 
@@ -371,18 +340,15 @@
             <div class="sales-mobile-bar lg:hidden">
                 <div>
                     <div class="text-[11px] uppercase tracking-wider text-slate-400">Total</div>
-                    <div class="text-lg font-semibold text-slate-900">{{ number_format($totals['total'], 2) }}</div>
+                    <div class="text-lg font-semibold text-slate-900">{{ number_format($totals['total'], 2) }} {{ $cartCurrency }}</div>
+                    @if ($hasMixedCurrency)
+                        <div class="mt-1 text-[11px] font-semibold text-rose-600">Devise unique</div>
+                    @endif
                 </div>
                 <div class="flex items-center gap-2">
-                    @if ($checkout)
-                        <button type="submit" class="app-btn-primary">
-                            Encaisser
-                        </button>
-                    @else
-                        <button type="button" wire:click="startCheckout" class="app-btn-primary">
-                            Encaissement
-                        </button>
-                    @endif
+                    <button type="submit" class="app-btn-primary" x-on:click="window.__receiptWindow = window.open('about:blank', '_blank');" @disabled($hasMixedCurrency)>
+                        Valider
+                    </button>
                     <button type="button" wire:click="savePending" class="app-btn-secondary">
                         Attente
                     </button>

@@ -64,6 +64,16 @@
                 </div>
 
                 <div>
+                    <label class="app-label">Devise</label>
+                    <select wire:model.live="currency" class="app-select">
+                        <option value="CDF">CDF</option>
+                        <option value="USD">USD</option>
+                        <option value="EUR">EUR</option>
+                    </select>
+                    @error('currency') <p class="mt-1 text-xs text-red-600">{{ $message }}</p> @enderror
+                </div>
+
+                <div>
                     <label class="app-label">Stock initial</label>
                     <input type="number" min="0" wire:model.live="stock_quantity" class="app-input" />
                     @error('stock_quantity') <p class="mt-1 text-xs text-red-600">{{ $message }}</p> @enderror
@@ -113,6 +123,7 @@
                             <th>SKU</th>
                             <th>Stock</th>
                             <th>Prix vente</th>
+                            <th>Devise</th>
                             <th class="text-right">Actions</th>
                         </tr>
                     </thead>
@@ -126,6 +137,7 @@
                                 <td>
                                     {{ $product->sale_price !== null ? number_format($product->sale_price, 2) : '—' }}
                                 </td>
+                                <td>{{ $product->currency ?? 'CDF' }}</td>
                                 <td class="text-right">
                                     <button type="button" wire:click="editProduct({{ $product->id }})" class="app-btn-ghost text-teal-600 hover:text-teal-700">Modifier</button>
                                     <button type="button" onclick="return confirm('Archiver ce produit ?') || event.stopImmediatePropagation()" wire:click="deleteProduct({{ $product->id }})" class="app-btn-ghost text-rose-600 hover:text-rose-700">Archiver</button>
@@ -160,25 +172,27 @@
                             <tr>
                                 <th>Produit</th>
                                 <th>Categorie</th>
-                                <th>SKU</th>
-                                <th>Stock</th>
-                                <th>Prix vente</th>
-                                <th class="text-right">Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody class="bg-white">
-                            @forelse ($archivedProducts as $product)
-                                <tr>
-                                    <td class="font-semibold text-slate-900">{{ $product->name }}</td>
-                                    <td>{{ $product->category?->name ?? '—' }}</td>
-                                    <td>{{ $product->sku ?? '—' }}</td>
-                                    <td>{{ $product->stock?->quantity ?? 0 }}</td>
-                                    <td>
-                                        {{ $product->sale_price !== null ? number_format($product->sale_price, 2) : '—' }}
-                                    </td>
-                                    <td class="text-right">
-                                        <button type="button" wire:click="restoreProduct({{ $product->id }})" class="app-btn-ghost text-amber-600 hover:text-amber-700">Restaurer</button>
-                                    </td>
+                            <th>SKU</th>
+                            <th>Stock</th>
+                            <th>Prix vente</th>
+                            <th>Devise</th>
+                            <th class="text-right">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody class="bg-white">
+                        @forelse ($archivedProducts as $product)
+                            <tr>
+                                <td class="font-semibold text-slate-900">{{ $product->name }}</td>
+                                <td>{{ $product->category?->name ?? '—' }}</td>
+                                <td>{{ $product->sku ?? '—' }}</td>
+                                <td>{{ $product->stock?->quantity ?? 0 }}</td>
+                                <td>
+                                    {{ $product->sale_price !== null ? number_format($product->sale_price, 2) : '—' }}
+                                </td>
+                                <td>{{ $product->currency ?? 'CDF' }}</td>
+                                <td class="text-right">
+                                    <button type="button" wire:click="restoreProduct({{ $product->id }})" class="app-btn-ghost text-amber-600 hover:text-amber-700">Restaurer</button>
+                                </td>
                                 </tr>
                             @empty
                                 <tr>

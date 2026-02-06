@@ -30,6 +30,10 @@ class Index extends Component
     public float $amountReceived = 0;
     public string $screenMode = 'pc';
     public bool $checkout = false;
+    public ?int $selectedProductId = null;
+    public int $selectedQuantity = 1;
+    public float $selectedDiscountRate = 0;
+    public ?float $selectedUnitPrice = null;
 
     protected function rules(): array
     {
@@ -49,14 +53,7 @@ class Index extends Component
     public function mount(): void
     {
         $this->sold_at = now()->format('Y-m-d');
-        $this->items = [
-            [
-                'product_id' => null,
-                'quantity' => 1,
-                'unit_price' => null,
-                'discount_rate' => 0,
-            ],
-        ];
+        $this->items = [];
         $this->screenMode = auth()->user()?->screen_mode ?? 'pc';
     }
 
@@ -93,31 +90,82 @@ class Index extends Component
         $this->dispatch('focus-barcode');
     }
 
-    public function addProduct(int $productId): void
+    public function selectProduct(int $productId): void
     {
+        $this->selectedProductId = $productId;
+        $this->selectedQuantity = max(1, (int) $this->selectedQuantity);
+        $this->selectedDiscountRate = (float) $this->selectedDiscountRate;
+        $this->selectedUnitPrice = Product::query()
+            ->whereKey($productId)
+            ->value(DB::raw('COALESCE(promo_price, sale_price)'));
+
+        $this->dispatch('focus-barcode');
+    }
+
+    public function addToCart(): void
+    {
+        if (! $this->selectedProductId) {
+            throw ValidationException::withMessages([
+                'selectedProductId' => 'Selectionnez un produit.',
+            ]);
+        }
+
+        $quantity = max(1, (int) $this->selectedQuantity);
+        $discountRate = max(0, min(100, (float) $this->selectedDiscountRate));
+        $price = Product::query()
+            ->whereKey($this->selectedProductId)
+            ->value(DB::raw('COALESCE(promo_price, sale_price)'));
+        $price = (float) ($price ?? 0);
+
         foreach ($this->items as $index => $item) {
-            if ((int) ($item['product_id'] ?? 0) === $productId) {
-                $this->items[$index]['quantity'] = ((int) ($item['quantity'] ?? 0)) + 1;
-                if (! $this->items[$index]['unit_price']) {
-                    $this->items[$index]['unit_price'] = Product::query()
-                        ->whereKey($productId)
-                        ->value('sale_price');
-                }
-                $this->dispatch('focus-barcode');
+            if ((int) ($item['product_id'] ?? 0) === (int) $this->selectedProductId) {
+                $this->items[$index]['quantity'] = ((int) ($item['quantity'] ?? 0)) + $quantity;
+                $this->items[$index]['unit_price'] = $price;
+                $this->items[$index]['discount_rate'] = $discountRate;
+                $this->resetSelectedItem();
                 return;
             }
         }
 
-        $product = Product::query()->select(['id', 'sale_price', 'promo_price'])->find($productId);
-        $price = $product && $product->promo_price !== null ? (float) $product->promo_price : (float) ($product?->sale_price ?? 0);
         $this->items[] = [
-            'product_id' => $productId,
-            'quantity' => 1,
-            'unit_price' => $price ?? 0,
-            'discount_rate' => 0,
+            'product_id' => $this->selectedProductId,
+            'quantity' => $quantity,
+            'unit_price' => $price,
+            'discount_rate' => $discountRate,
         ];
 
+        $this->resetSelectedItem();
+    }
+
+    public function incrementSelectedQuantity(): void
+    {
+        $this->selectedQuantity = max(1, (int) $this->selectedQuantity) + 1;
+    }
+
+    public function decrementSelectedQuantity(): void
+    {
+        $this->selectedQuantity = max(1, (int) $this->selectedQuantity - 1);
+    }
+
+    public function resetSelectedItemForm(): void
+    {
+        $this->resetSelectedItem();
+    }
+
+    private function resetSelectedItem(): void
+    {
+        $this->selectedProductId = null;
+        $this->selectedQuantity = 1;
+        $this->selectedDiscountRate = 0;
+        $this->selectedUnitPrice = null;
+        $this->productSearch = '';
+        $this->barcodeInput = '';
         $this->dispatch('focus-barcode');
+    }
+
+    public function addProduct(int $productId): void
+    {
+        $this->selectProduct($productId);
     }
 
     public function updatedBarcodeInput($value): void
@@ -133,7 +181,11 @@ class Index extends Component
             ->value('id');
 
         if ($productId) {
-            $this->addProduct((int) $productId);
+            if ((int) $this->selectedProductId === (int) $productId) {
+                $this->selectedQuantity = max(1, (int) $this->selectedQuantity) + 1;
+            } else {
+                $this->selectProduct((int) $productId);
+            }
             $this->barcodeInput = '';
             $this->dispatch('focus-barcode');
         }
@@ -155,6 +207,18 @@ class Index extends Component
         $product = Product::query()->select(['id', 'sale_price', 'promo_price'])->find($value);
         $price = $product && $product->promo_price !== null ? (float) $product->promo_price : (float) ($product?->sale_price ?? 0);
         $this->items[$index]['unit_price'] = $price;
+    }
+
+    public function updatedSelectedProductId($value): void
+    {
+        if (! $value) {
+            $this->selectedUnitPrice = null;
+            return;
+        }
+
+        $this->selectedUnitPrice = (float) (Product::query()
+            ->whereKey($value)
+            ->value(DB::raw('COALESCE(promo_price, sale_price)')) ?? 0);
     }
 
     public function removeItem(int $index): void
@@ -192,14 +256,8 @@ class Index extends Component
         $this->amountReceived = 0;
         $this->checkout = false;
         $this->sold_at = now()->format('Y-m-d');
-        $this->items = [
-            [
-                'product_id' => null,
-                'quantity' => 1,
-                'unit_price' => null,
-                'discount_rate' => 0,
-            ],
-        ];
+        $this->items = [];
+        $this->resetSelectedItem();
     }
 
     private function normalizeItemsWithPrices(array $items): array
@@ -252,6 +310,15 @@ class Index extends Component
         $validated = $this->validate();
         $validated['items'] = $this->normalizeItemsWithPrices($validated['items']);
         $invoiceId = null;
+        $cartCurrencies = collect($validated['items'])
+            ->map(fn ($item) => Product::query()->whereKey($item['product_id'])->value('currency') ?? 'CDF')
+            ->unique()
+            ->values();
+        if ($cartCurrencies->count() > 1) {
+            throw ValidationException::withMessages([
+                'items' => 'Les articles doivent etre dans une seule devise.',
+            ]);
+        }
 
         $totalsByProduct = [];
         foreach ($validated['items'] as $item) {
@@ -398,6 +465,15 @@ class Index extends Component
     {
         $validated = $this->validate();
         $validated['items'] = $this->normalizeItemsWithPrices($validated['items']);
+        $cartCurrencies = collect($validated['items'])
+            ->map(fn ($item) => Product::query()->whereKey($item['product_id'])->value('currency') ?? 'CDF')
+            ->unique()
+            ->values();
+        if ($cartCurrencies->count() > 1) {
+            throw ValidationException::withMessages([
+                'items' => 'Les articles doivent etre dans une seule devise.',
+            ]);
+        }
 
         DB::transaction(function () use ($validated) {
             $totals = $this->calculateTotals($validated['items'], (float) $this->discountRate, (float) $this->taxRate);
@@ -518,6 +594,7 @@ class Index extends Component
             ->with(['stock', 'category'])
             ->orderBy('name')
             ->get();
+        $productsById = $products->keyBy('id');
 
         $filteredProducts = collect();
         if ($this->productSearch !== '') {
@@ -578,15 +655,24 @@ class Index extends Component
             ->get();
 
         $changeDue = max(0, round($this->amountReceived - $totals['total'], 2));
+        $cartCurrencies = collect($this->items)
+            ->map(fn ($item) => $productsById->get($item['product_id'])?->currency ?? 'CDF')
+            ->unique()
+            ->values();
+        $cartCurrency = $cartCurrencies->first() ?? 'CDF';
+        $hasMixedCurrency = $cartCurrencies->count() > 1;
 
         return view('livewire.sales.index', [
             'products' => $products,
+            'productsById' => $productsById,
             'filteredProducts' => $filteredProducts,
             'favoriteProducts' => $favoriteProducts,
             'frequentProducts' => $frequentProducts,
             'totals' => $totals,
             'pendingSales' => $pendingSales,
             'changeDue' => $changeDue,
+            'cartCurrency' => $cartCurrency,
+            'hasMixedCurrency' => $hasMixedCurrency,
         ])->layout('layouts.app');
     }
 }

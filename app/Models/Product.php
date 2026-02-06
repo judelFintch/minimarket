@@ -21,6 +21,7 @@ class Product extends Model
         'sale_price',
         'promo_label',
         'promo_price',
+        'currency',
         'archived_at',
     ];
 
