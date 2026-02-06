@@ -4,6 +4,7 @@ use App\Http\Controllers\InvoiceController;
 use App\Livewire\Categories\Index as CategoriesIndex;
 use App\Livewire\Products\Index as ProductsIndex;
 use App\Livewire\Purchases\Index as PurchasesIndex;
+use App\Livewire\Reports\Sales as SalesReport;
 use App\Livewire\Sales\Index as SalesIndex;
 use App\Livewire\Sales\History as SalesHistory;
 use App\Livewire\Stocks\Index as StocksIndex;
@@ -31,6 +32,8 @@ Route::middleware(['auth'])->group(function () {
         ->name('sales.index');
     Route::get('sales/history', SalesHistory::class)
         ->name('sales.history');
+    Route::get('reports/sales', SalesReport::class)
+        ->name('reports.sales');
     Route::get('suppliers', SuppliersIndex::class)
         ->name('suppliers.index');
     Route::get('purchases', PurchasesIndex::class)

@@ -25,6 +25,7 @@ new class extends Component
         ['label' => 'Categories', 'route' => 'categories.index'],
         ['label' => 'Fournisseurs', 'route' => 'suppliers.index'],
         ['label' => 'Achats', 'route' => 'purchases.index'],
+        ['label' => 'Rapports', 'route' => 'reports.sales'],
     ];
 @endphp
 
