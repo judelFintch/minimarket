@@ -36,6 +36,7 @@ class Index extends Component
 
     public function mount(): void
     {
+        $this->authorizeAccess();
         $this->purchased_at = now()->format('Y-m-d');
         $this->items = [
             [
@@ -81,10 +82,12 @@ class Index extends Component
 
     public function savePurchase(): void
     {
+        $this->authorizeAccess();
         $validated = $this->validate();
 
         DB::transaction(function () use ($validated) {
             $purchase = Purchase::create([
+                'user_id' => auth()->id(),
                 'supplier_id' => $validated['supplier_id'],
                 'reference' => 'PUR-' . now()->format('YmdHis') . '-' . Str::upper(Str::random(4)),
                 'total_amount' => 0,
@@ -132,6 +135,7 @@ class Index extends Component
 
     public function render()
     {
+        $this->authorizeAccess();
         $suppliers = Supplier::query()
             ->orderBy('name')
             ->get();
@@ -140,11 +144,17 @@ class Index extends Component
             ->orderBy('name')
             ->get();
 
-        $purchases = Purchase::query()
+        $purchasesQuery = Purchase::query()
             ->with('supplier')
             ->when($this->search !== '', function ($query) {
                 $query->where('reference', 'like', '%' . $this->search . '%');
-            })
+            });
+
+        if (! auth()->user()?->isAdmin()) {
+            $purchasesQuery->where('user_id', auth()->id());
+        }
+
+        $purchases = $purchasesQuery
             ->orderByDesc('purchased_at')
             ->orderByDesc('id')
             ->paginate(10);
@@ -161,5 +171,11 @@ class Index extends Component
             'purchases' => $purchases,
             'total' => $total,
         ])->layout('layouts.app');
+    }
+
+    private function authorizeAccess(): void
+    {
+        $user = auth()->user();
+        abort_unless($user && $user->role !== 'vendeur_simple', 403);
     }
 }

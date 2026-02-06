@@ -9,6 +9,7 @@ use App\Livewire\Sales\Index as SalesIndex;
 use App\Livewire\Sales\History as SalesHistory;
 use App\Livewire\Stocks\Index as StocksIndex;
 use App\Livewire\Suppliers\Index as SuppliersIndex;
+use App\Livewire\Users\Index as UsersIndex;
 use Illuminate\Support\Facades\Route;
 
 Route::redirect('/', '/login');
@@ -34,6 +35,8 @@ Route::middleware(['auth'])->group(function () {
         ->name('sales.history');
     Route::get('reports/sales', SalesReport::class)
         ->name('reports.sales');
+    Route::get('users', UsersIndex::class)
+        ->name('users.index');
     Route::get('suppliers', SuppliersIndex::class)
         ->name('suppliers.index');
     Route::get('purchases', PurchasesIndex::class)

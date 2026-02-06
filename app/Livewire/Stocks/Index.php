@@ -47,6 +47,7 @@ class Index extends Component
 
     public function saveMovement(): void
     {
+        $this->authorizeAccess();
         $validated = $this->validate();
 
         if ($validated['type'] !== 'adjustment' && $validated['quantity'] <= 0) {
@@ -95,6 +96,7 @@ class Index extends Component
 
     public function render()
     {
+        $this->authorizeAccess();
         $products = Product::query()
             ->orderBy('name')
             ->get();
@@ -114,5 +116,11 @@ class Index extends Component
             'products' => $products,
             'movements' => $movements,
         ])->layout('layouts.app');
+    }
+
+    private function authorizeAccess(): void
+    {
+        $user = auth()->user();
+        abort_unless($user && $user->role !== 'vendeur_simple', 403);
     }
 }

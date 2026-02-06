@@ -31,12 +31,12 @@ class DatabaseSeeder extends Seeder
 
         $admin = User::firstOrCreate(
             ['email' => 'admin@minimarket.test'],
-            ['name' => 'Administrateur', 'password' => Hash::make('password')]
+            ['name' => 'Administrateur', 'password' => Hash::make('password'), 'role' => 'admin']
         );
 
         $cashier = User::firstOrCreate(
             ['email' => 'caisse@minimarket.test'],
-            ['name' => 'Caissier', 'password' => Hash::make('password')]
+            ['name' => 'Caissier', 'password' => Hash::make('password'), 'role' => 'vendeur']
         );
 
         $categories = [
@@ -115,6 +115,7 @@ class DatabaseSeeder extends Seeder
         for ($i = 0; $i < 5; $i++) {
             $supplier = $supplierModels[array_rand($supplierModels)];
             $purchase = Purchase::create([
+                'user_id' => $admin->id,
                 'supplier_id' => $supplier->id,
                 'reference' => 'PUR-' . now()->subDays(10 - $i)->format('Ymd') . '-' . strtoupper(str()->random(4)),
                 'total_amount' => 0,
@@ -196,6 +197,7 @@ class DatabaseSeeder extends Seeder
             $totals = $createSaleTotals($items, $discountRate, $taxRate);
 
             $sale = Sale::create([
+                'user_id' => $cashier->id,
                 'reference' => 'SALE-' . now()->subDays(5 - $i)->format('YmdHis') . '-' . strtoupper(str()->random(4)),
                 'customer_name' => $faker->name(),
                 'total_amount' => $totals['total'],
@@ -264,6 +266,7 @@ class DatabaseSeeder extends Seeder
             $totals = $createSaleTotals($items, 0, 0);
 
             Sale::create([
+                'user_id' => $cashier->id,
                 'reference' => 'SALE-' . now()->format('YmdHis') . '-' . strtoupper(str()->random(4)),
                 'customer_name' => $faker->name(),
                 'total_amount' => $totals['total'],

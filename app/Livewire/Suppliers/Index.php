@@ -36,6 +36,7 @@ class Index extends Component
 
     public function editSupplier(int $supplierId): void
     {
+        $this->authorizeAccess();
         $supplier = Supplier::findOrFail($supplierId);
 
         $this->supplierId = $supplier->id;
@@ -60,6 +61,7 @@ class Index extends Component
 
     public function saveSupplier(): void
     {
+        $this->authorizeAccess();
         $validated = $this->validate();
 
         Supplier::updateOrCreate(
@@ -72,6 +74,7 @@ class Index extends Component
 
     public function deleteSupplier(int $supplierId): void
     {
+        $this->authorizeAccess();
         Supplier::query()->findOrFail($supplierId)->delete();
 
         $this->resetForm();
@@ -79,6 +82,7 @@ class Index extends Component
 
     public function render()
     {
+        $this->authorizeAccess();
         $suppliers = Supplier::query()
             ->when($this->search !== '', function ($query) {
                 $query->where(function ($subQuery) {
@@ -94,5 +98,11 @@ class Index extends Component
         return view('livewire.suppliers.index', [
             'suppliers' => $suppliers,
         ])->layout('layouts.app');
+    }
+
+    private function authorizeAccess(): void
+    {
+        $user = auth()->user();
+        abort_unless($user && $user->role !== 'vendeur_simple', 403);
     }
 }

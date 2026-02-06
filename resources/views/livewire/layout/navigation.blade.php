@@ -17,16 +17,28 @@ new class extends Component
 }; ?>
 
 @php
+    $user = auth()->user();
+    $role = $user?->role ?? 'vendeur';
     $navItems = [
         ['label' => 'Dashboard', 'route' => 'dashboard'],
         ['label' => 'Ventes', 'route' => 'sales.index'],
-        ['label' => 'Stock', 'route' => 'stocks.index'],
-        ['label' => 'Produits', 'route' => 'products.index'],
-        ['label' => 'Categories', 'route' => 'categories.index'],
-        ['label' => 'Fournisseurs', 'route' => 'suppliers.index'],
-        ['label' => 'Achats', 'route' => 'purchases.index'],
-        ['label' => 'Rapports', 'route' => 'reports.sales'],
+        ['label' => 'Historique', 'route' => 'sales.history'],
     ];
+
+    if ($role !== 'vendeur_simple') {
+        $navItems = array_merge($navItems, [
+            ['label' => 'Stock', 'route' => 'stocks.index'],
+            ['label' => 'Produits', 'route' => 'products.index'],
+            ['label' => 'Categories', 'route' => 'categories.index'],
+            ['label' => 'Fournisseurs', 'route' => 'suppliers.index'],
+            ['label' => 'Achats', 'route' => 'purchases.index'],
+            ['label' => 'Rapports', 'route' => 'reports.sales'],
+        ]);
+    }
+
+    if ($role === 'admin') {
+        $navItems[] = ['label' => 'Utilisateurs', 'route' => 'users.index'];
+    }
 @endphp
 
 <div>

@@ -43,7 +43,12 @@ class History extends Component
 
     public function finalizeSale(int $saleId): void
     {
-        $sale = Sale::query()->with('items')->findOrFail($saleId);
+        $saleQuery = Sale::query()->with('items')->whereKey($saleId);
+        if (! auth()->user()?->isAdmin()) {
+            $saleQuery->where('user_id', auth()->id());
+        }
+
+        $sale = $saleQuery->firstOrFail();
 
         if ($sale->status === 'paid') {
             return;
@@ -128,6 +133,9 @@ class History extends Component
             })
             ->when($this->status_filter !== '', function ($query) {
                 $query->where('status', $this->status_filter);
+            })
+            ->when(! auth()->user()?->isAdmin(), function ($query) {
+                $query->where('user_id', auth()->id());
             })
             ->orderByDesc('sold_at')
             ->orderByDesc('id')

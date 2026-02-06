@@ -23,6 +23,7 @@ class User extends Authenticatable
         'email',
         'password',
         'screen_mode',
+        'role',
     ];
 
     /**
@@ -46,7 +47,23 @@ class User extends Authenticatable
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
             'screen_mode' => 'string',
+            'role' => 'string',
         ];
+    }
+
+    public function isAdmin(): bool
+    {
+        return $this->role === 'admin';
+    }
+
+    public function isSeller(): bool
+    {
+        return $this->role === 'vendeur';
+    }
+
+    public function isSellerSimple(): bool
+    {
+        return $this->role === 'vendeur_simple';
     }
 
     public function favoriteProducts(): BelongsToMany

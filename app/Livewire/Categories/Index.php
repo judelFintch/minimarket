@@ -36,6 +36,7 @@ class Index extends Component
 
     public function editCategory(int $categoryId): void
     {
+        $this->authorizeAccess();
         $category = Category::findOrFail($categoryId);
 
         $this->categoryId = $category->id;
@@ -50,6 +51,7 @@ class Index extends Component
 
     public function saveCategory(): void
     {
+        $this->authorizeAccess();
         $validated = $this->validate();
 
         Category::updateOrCreate(
@@ -62,6 +64,7 @@ class Index extends Component
 
     public function deleteCategory(int $categoryId): void
     {
+        $this->authorizeAccess();
         Category::query()->findOrFail($categoryId)->delete();
 
         $this->resetForm();
@@ -69,6 +72,7 @@ class Index extends Component
 
     public function render()
     {
+        $this->authorizeAccess();
         $categories = Category::query()
             ->when($this->search !== '', function ($query) {
                 $query->where('name', 'like', '%' . $this->search . '%');
@@ -79,5 +83,11 @@ class Index extends Component
         return view('livewire.categories.index', [
             'categories' => $categories,
         ])->layout('layouts.app');
+    }
+
+    private function authorizeAccess(): void
+    {
+        $user = auth()->user();
+        abort_unless($user && $user->role !== 'vendeur_simple', 403);
     }
 }

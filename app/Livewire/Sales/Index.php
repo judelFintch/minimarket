@@ -343,6 +343,7 @@ class Index extends Component
             $totals = $this->calculateTotals($validated['items'], (float) $this->discountRate, (float) $this->taxRate);
 
             $sale = Sale::create([
+                'user_id' => auth()->id(),
                 'reference' => 'SALE-' . now()->format('YmdHis') . '-' . Str::upper(Str::random(4)),
                 'customer_name' => $validated['customer_name'],
                 'total_amount' => $totals['total'],
@@ -440,10 +441,16 @@ class Index extends Component
 
     public function loadPendingSale(int $saleId): void
     {
-        $sale = Sale::query()
+        $saleQuery = Sale::query()
             ->with('items')
             ->where('status', 'pending')
-            ->findOrFail($saleId);
+            ->whereKey($saleId);
+
+        if (! auth()->user()?->isAdmin()) {
+            $saleQuery->where('user_id', auth()->id());
+        }
+
+        $sale = $saleQuery->firstOrFail();
 
         $this->customer_name = $sale->customer_name;
         $this->sold_at = $sale->sold_at?->format('Y-m-d') ?? now()->format('Y-m-d');
@@ -479,6 +486,7 @@ class Index extends Component
             $totals = $this->calculateTotals($validated['items'], (float) $this->discountRate, (float) $this->taxRate);
 
             $sale = Sale::create([
+                'user_id' => auth()->id(),
                 'reference' => 'SALE-' . now()->format('YmdHis') . '-' . Str::upper(Str::random(4)),
                 'customer_name' => $validated['customer_name'],
                 'total_amount' => $totals['total'],
@@ -590,6 +598,7 @@ class Index extends Component
 
     public function render()
     {
+        $isAdmin = auth()->user()?->isAdmin() ?? false;
         $products = Product::query()
             ->with(['stock', 'category'])
             ->orderBy('name')
@@ -612,12 +621,18 @@ class Index extends Component
 
         $frequentProductIds = [];
         if (Schema::hasColumns('sale_items', ['product_id', 'sale_id', 'quantity']) && Schema::hasColumn('sales', 'status')) {
-            $frequentProductIds = SaleItem::query()
+            $frequentProductQuery = SaleItem::query()
                 ->select('product_id', DB::raw('sum(quantity) as total_qty'))
                 ->join('sales', 'sales.id', '=', 'sale_items.sale_id')
                 ->where('sales.status', 'paid')
                 ->groupBy('product_id')
-                ->orderByDesc('total_qty')
+                ->orderByDesc('total_qty');
+
+            if (! $isAdmin) {
+                $frequentProductQuery->where('sales.user_id', auth()->id());
+            }
+
+            $frequentProductIds = $frequentProductQuery
                 ->limit(6)
                 ->pluck('product_id')
                 ->all();
@@ -647,10 +662,16 @@ class Index extends Component
         }
 
         $totals = $this->calculateTotals($this->items, (float) $this->discountRate, (float) $this->taxRate);
-        $pendingSales = Sale::query()
+        $pendingSalesQuery = Sale::query()
             ->withCount('items')
             ->where('status', 'pending')
-            ->orderByDesc('sold_at')
+            ->orderByDesc('sold_at');
+
+        if (! $isAdmin) {
+            $pendingSalesQuery->where('user_id', auth()->id());
+        }
+
+        $pendingSales = $pendingSalesQuery
             ->limit(5)
             ->get();
 

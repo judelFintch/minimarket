@@ -65,6 +65,7 @@ class Index extends Component
 
     public function editProduct(int $productId): void
     {
+        $this->authorizeAccess();
         $this->deleteError = '';
         $product = Product::query()->with('stock')->findOrFail($productId);
 
@@ -99,6 +100,7 @@ class Index extends Component
 
     public function saveProduct(): void
     {
+        $this->authorizeAccess();
         $this->deleteError = '';
         $validated = $this->validate();
 
@@ -126,6 +128,7 @@ class Index extends Component
 
     public function deleteProduct(int $productId): void
     {
+        $this->authorizeAccess();
         $product = Product::query()->findOrFail($productId);
 
         $product->update([
@@ -138,6 +141,7 @@ class Index extends Component
 
     public function restoreProduct(int $productId): void
     {
+        $this->authorizeAccess();
         Product::query()
             ->whereNotNull('archived_at')
             ->findOrFail($productId)
@@ -146,6 +150,7 @@ class Index extends Component
 
     public function render()
     {
+        $this->authorizeAccess();
         $products = Product::query()
             ->with(['category', 'stock'])
             ->whereNull('archived_at')
@@ -184,5 +189,11 @@ class Index extends Component
             'archivedProducts' => $archivedProducts,
             'categories' => $categories,
         ])->layout('layouts.app');
+    }
+
+    private function authorizeAccess(): void
+    {
+        $user = auth()->user();
+        abort_unless($user && $user->role !== 'vendeur_simple', 403);
     }
 }
