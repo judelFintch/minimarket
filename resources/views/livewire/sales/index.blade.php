@@ -66,8 +66,8 @@
     </x-slot>
 
     <div class="mx-auto max-w-6xl space-y-8 sales-shell">
-        <form wire:submit.prevent="saveSale" class="sales-grid grid gap-6 lg:grid-cols-12">
-            <div class="lg:col-span-8 space-y-6 sales-cart">
+        <form wire:submit.prevent="saveSale" class="sales-grid grid gap-6">
+            <div class="sales-cart space-y-6 lg:order-1">
                 <div class="app-card sales-card">
                     <div class="app-card-header">
                         <div>
@@ -155,8 +155,8 @@
                     <div class="app-card-body">
                         <div class="space-y-3 sales-lines">
                             @foreach ($items as $index => $item)
-                                <div class="sales-line grid items-end gap-3 rounded-2xl border border-slate-200/80 bg-white p-4 shadow-sm lg:grid-cols-12">
-                                    <div class="lg:col-span-4">
+                                <div class="sales-line grid items-end gap-3 rounded-2xl border border-slate-200/80 bg-white p-4 shadow-sm sm:grid-cols-12">
+                                    <div class="sm:col-span-4">
                                         <label class="app-label">Produit</label>
                                         <select wire:model.live="items.{{ $index }}.product_id" class="app-select">
                                             <option value="">Selectionner</option>
@@ -169,7 +169,7 @@
                                         @error("items.$index.product_id") <p class="mt-1 text-xs text-red-600">{{ $message }}</p> @enderror
                                     </div>
 
-                                    <div class="lg:col-span-2">
+                                    <div class="sm:col-span-2">
                                         <label class="app-label">Quantite</label>
                                         <div class="flex items-center gap-2">
                                             <button type="button" wire:click="decrementQuantity({{ $index }})" class="h-9 w-9 rounded-xl border border-slate-200 bg-white text-lg font-semibold text-slate-600 hover:bg-slate-50">
@@ -183,7 +183,7 @@
                                         @error("items.$index.quantity") <p class="mt-1 text-xs text-red-600">{{ $message }}</p> @enderror
                                     </div>
 
-                                    <div class="lg:col-span-2">
+                                    <div class="sm:col-span-2">
                                         <div class="flex items-center justify-between">
                                             <label class="app-label">Prix unitaire</label>
                                             <span class="text-xs font-semibold text-emerald-600">Auto</span>
@@ -192,13 +192,13 @@
                                         @error("items.$index.unit_price") <p class="mt-1 text-xs text-red-600">{{ $message }}</p> @enderror
                                     </div>
 
-                                    <div class="lg:col-span-2">
+                                    <div class="sm:col-span-2">
                                         <label class="app-label">Remise %</label>
                                         <input type="number" min="0" max="100" step="0.01" wire:model.live="items.{{ $index }}.discount_rate" class="app-input" />
                                         @error("items.$index.discount_rate") <p class="mt-1 text-xs text-red-600">{{ $message }}</p> @enderror
                                     </div>
 
-                                    <div class="lg:col-span-2 flex items-center justify-between gap-2">
+                                    <div class="sm:col-span-2 flex items-center justify-between gap-2">
                                         <div class="text-right">
                                             <div class="text-xs uppercase tracking-wide text-slate-400">Total ligne</div>
                                             <div class="text-base font-semibold text-slate-900">
@@ -236,7 +236,7 @@
                 </div>
             </div>
 
-            <div class="lg:col-span-4 sales-summary space-y-6">
+            <div class="sales-summary space-y-6 lg:order-2">
                 <div class="app-card sales-card">
                     <div class="app-card-header">
                         <div>
@@ -366,6 +366,27 @@
                         </div>
                     </div>
                 @endif
+            </div>
+
+            <div class="sales-mobile-bar lg:hidden">
+                <div>
+                    <div class="text-[11px] uppercase tracking-wider text-slate-400">Total</div>
+                    <div class="text-lg font-semibold text-slate-900">{{ number_format($totals['total'], 2) }}</div>
+                </div>
+                <div class="flex items-center gap-2">
+                    @if ($checkout)
+                        <button type="submit" class="app-btn-primary">
+                            Encaisser
+                        </button>
+                    @else
+                        <button type="button" wire:click="startCheckout" class="app-btn-primary">
+                            Encaissement
+                        </button>
+                    @endif
+                    <button type="button" wire:click="savePending" class="app-btn-secondary">
+                        Attente
+                    </button>
+                </div>
             </div>
         </form>
     </div>

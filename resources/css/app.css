@@ -228,6 +228,7 @@
     .sales-screen {
         --sales-gap: 1.5rem;
         --sales-card-radius: 1.25rem;
+        --sales-mobile-bar-height: 4.25rem;
     }
 
     .sales-card {
@@ -242,6 +243,31 @@
         gap: var(--sales-gap);
     }
 
+    .sales-summary {
+        position: relative;
+    }
+
+    .sales-mobile-bar {
+        position: sticky;
+        bottom: 0;
+        z-index: 20;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 1rem;
+        border: 1px solid rgba(226, 232, 240, 0.9);
+        border-radius: 1.25rem;
+        background: rgba(255, 255, 255, 0.95);
+        padding: 0.75rem 1rem;
+        box-shadow: 0 -12px 30px -26px rgba(15, 23, 42, 0.6);
+        backdrop-filter: blur(14px);
+    }
+
+    .sales-screen .sales-mobile-bar .app-btn-primary,
+    .sales-screen .sales-mobile-bar .app-btn-secondary {
+        padding: 0.65rem 1rem;
+    }
+
     @media (min-width: 1024px) {
         .sales-screen-pos .sales-grid {
             grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr);
@@ -251,8 +277,18 @@
             grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr);
         }
 
+        .sales-screen-pc .sales-grid {
+            grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr);
+        }
+
         .sales-screen-mobile .sales-grid {
             grid-template-columns: minmax(0, 1fr);
+        }
+
+        .sales-summary {
+            position: sticky;
+            top: 6rem;
+            align-self: start;
         }
     }
 
@@ -303,8 +339,7 @@
         padding-bottom: 1rem;
     }
 
-    .sales-screen-tablet .sales-summary .app-card {
-        position: sticky;
+    .sales-screen-tablet .sales-summary {
         top: 5.5rem;
     }
 
@@ -329,5 +364,9 @@
     .sales-screen-mobile .sales-scan {
         width: 100%;
         justify-content: space-between;
+    }
+
+    .sales-screen-mobile .sales-mobile-bar {
+        border-radius: 1rem;
     }
 }
