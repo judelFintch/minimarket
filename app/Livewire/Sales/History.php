@@ -21,6 +21,10 @@ class History extends Component
     public ?string $date_to = null;
     public string $status_filter = '';
 
+    protected $queryString = [
+        'search' => ['except' => ''],
+    ];
+
     public function updatingSearch(): void
     {
         $this->resetPage();

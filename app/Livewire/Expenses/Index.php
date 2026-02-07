@@ -40,6 +40,10 @@ class Index extends Component
 
     public string $search = '';
 
+    protected $queryString = [
+        'search' => ['except' => ''],
+    ];
+
     protected function rules(): array
     {
         return [

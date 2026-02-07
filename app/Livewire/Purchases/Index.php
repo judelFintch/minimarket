@@ -22,6 +22,10 @@ class Index extends Component
     public array $items = [];
     public string $search = '';
 
+    protected $queryString = [
+        'search' => ['except' => ''],
+    ];
+
     protected function rules(): array
     {
         return [

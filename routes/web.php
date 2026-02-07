@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\InvoiceController;
 use App\Livewire\Categories\Index as CategoriesIndex;
+use App\Livewire\Dashboard;
 use App\Livewire\ExpenseCategories\Index as ExpenseCategoriesIndex;
 use App\Livewire\Expenses\Index as ExpensesIndex;
 use App\Livewire\Products\Index as ProductsIndex;
@@ -19,7 +20,7 @@ use Illuminate\Support\Facades\Route;
 
 Route::redirect('/', '/login');
 
-Route::view('dashboard', 'dashboard')
+Route::get('dashboard', Dashboard::class)
     ->middleware(['auth', 'verified'])
     ->name('dashboard');
 

@@ -30,6 +30,10 @@ class Index extends Component
     public string $deleteError = '';
     public bool $showArchived = false;
 
+    protected $queryString = [
+        'search' => ['except' => ''],
+    ];
+
     protected function rules(): array
     {
         return [

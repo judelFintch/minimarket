@@ -85,19 +85,29 @@ new class extends Component
         ->all();
 @endphp
 
-<div>
+<div x-data x-on:keydown.window="
+    if (($event.ctrlKey || $event.metaKey) && $event.key.toLowerCase() === 'k') {
+        $event.preventDefault();
+        document.querySelector('[data-global-search-input]')?.focus();
+    }
+">
     <div class="app-topbar">
         <a href="{{ route('dashboard') }}" wire:navigate class="app-topbar-title">
             {{ config('app.name', 'miniMaket') }}
         </a>
         <div class="flex items-center gap-2">
+            <div class="hidden sm:block">
+                <livewire:global-search />
+            </div>
             <a href="{{ route('profile') }}" wire:navigate class="app-btn-ghost">Profil</a>
             <button wire:click="logout" class="app-btn-ghost">Deconnexion</button>
         </div>
     </div>
 
     <div class="border-b border-slate-200/70 bg-white/80 px-4 py-3 backdrop-blur lg:hidden">
-        <div class="flex gap-2 overflow-x-auto text-sm font-semibold text-slate-600">
+        <div class="space-y-3">
+            <livewire:global-search />
+            <div class="flex gap-2 overflow-x-auto text-sm font-semibold text-slate-600">
             @foreach ($navItems as $item)
                 @php $active = request()->routeIs($item['route']); @endphp
                 <a href="{{ route($item['route']) }}"
@@ -109,6 +119,7 @@ new class extends Component
                     @endif
                 </a>
             @endforeach
+            </div>
         </div>
     </div>
 
@@ -119,6 +130,10 @@ new class extends Component
                 <div class="app-sidebar-title">{{ config('app.name', 'miniMaket') }}</div>
                 <div class="app-sidebar-subtitle">Gestion magasin</div>
             </div>
+        </div>
+
+        <div class="px-4 pt-5">
+            <livewire:global-search />
         </div>
 
         <nav class="app-sidebar-nav">

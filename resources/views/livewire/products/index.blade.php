@@ -126,6 +126,36 @@
                 </div>
             @endif
 
+            <div class="px-6 pt-6">
+                <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+                    @foreach ($products->take(6) as $product)
+                        @php
+                            $stockQty = $product->stock?->quantity ?? 0;
+                            $minStock = $product->min_stock ?? 0;
+                            $status = $stockQty <= $minStock ? 'alert' : ($stockQty <= ($minStock + 5) ? 'warn' : 'ok');
+                        @endphp
+                        <div class="rounded-2xl border border-slate-200/70 bg-white/80 px-4 py-4 shadow-sm">
+                            <div class="flex items-start justify-between gap-3">
+                                <div>
+                                    <div class="text-sm font-semibold text-slate-900">{{ $product->name }}</div>
+                                    <div class="text-xs text-slate-500">{{ $product->category?->name ?? 'Sans categorie' }}</div>
+                                </div>
+                                <span class="app-badge {{ $status === 'alert' ? 'bg-rose-100 text-rose-700' : ($status === 'warn' ? 'bg-amber-100 text-amber-700' : 'bg-emerald-100 text-emerald-700') }}">
+                                    Stock {{ $stockQty }}
+                                </span>
+                            </div>
+                            <div class="mt-3 flex items-center justify-between text-xs text-slate-500">
+                                <span>Seuil {{ $minStock }}</span>
+                                <span>{{ number_format($product->sale_price ?? 0, 2) }} {{ $product->currency ?? 'CDF' }}</span>
+                            </div>
+                            <div class="mt-3 flex justify-end">
+                                <button type="button" wire:click="editProduct({{ $product->id }})" class="app-btn-ghost text-teal-600 hover:text-teal-700">Modifier</button>
+                            </div>
+                        </div>
+                    @endforeach
+                </div>
+            </div>
+
             <div class="overflow-x-auto">
                 <table class="app-table">
                     <thead>

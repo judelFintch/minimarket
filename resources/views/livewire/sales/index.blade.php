@@ -65,6 +65,16 @@
         </div>
     </x-slot>
 
+    <div class="sales-shortcuts">
+        <div class="text-xs font-semibold uppercase tracking-wider text-slate-500">Raccourcis clavier</div>
+        <div class="mt-2 flex flex-wrap gap-2 text-xs font-semibold text-slate-600">
+            <span class="rounded-full border border-slate-200 bg-white px-3 py-1">Ctrl + Enter : Valider</span>
+            <span class="rounded-full border border-slate-200 bg-white px-3 py-1">Ctrl + Shift + Enter : Attente</span>
+            <span class="rounded-full border border-slate-200 bg-white px-3 py-1">F2 : Client</span>
+            <span class="rounded-full border border-slate-200 bg-white px-3 py-1">F4 : Scan</span>
+        </div>
+    </div>
+
     <div class="mx-auto max-w-6xl space-y-8 sales-shell">
         <form wire:submit.prevent="saveSale" class="sales-grid grid gap-6">
             <div class="sales-cart space-y-6 lg:order-1">
@@ -229,7 +239,7 @@
                                         $lineDiscount = $lineBase * (((float) ($item['discount_rate'] ?? 0)) / 100);
                                         $lineTotal = $lineBase - $lineDiscount;
                                     @endphp
-                                    <div class="flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-slate-200/80 bg-white p-4 shadow-sm">
+                                    <div class="sales-line flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-slate-200/80 bg-white p-4 shadow-sm">
                                         <div class="min-w-0">
                                             <div class="text-sm font-semibold text-slate-900">{{ $product?->name ?? 'Produit' }}</div>
                                             <div class="mt-1 text-xs text-slate-500">

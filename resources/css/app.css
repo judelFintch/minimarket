@@ -101,6 +101,34 @@
         @apply text-base font-semibold text-slate-900;
     }
 
+    .app-global-search {
+        @apply relative;
+    }
+
+    .app-global-search-input {
+        @apply w-full bg-white/90 pr-20 text-sm sm:w-64;
+    }
+
+    .app-global-search-hint {
+        @apply pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 rounded-full border border-slate-200 bg-white px-2 py-0.5 text-[10px] font-semibold text-slate-500;
+    }
+
+    .app-global-search-panel {
+        @apply absolute z-40 mt-2 w-full rounded-2xl border border-slate-200 bg-white shadow-lg;
+    }
+
+    .app-global-search-item {
+        @apply flex items-center gap-3 border-b border-slate-100 px-4 py-3 text-sm transition hover:bg-slate-50;
+    }
+
+    .app-global-search-item:last-child {
+        border-bottom: 0;
+    }
+
+    .app-global-search-type {
+        @apply rounded-full bg-slate-100 px-2 py-1 text-[10px] font-semibold uppercase tracking-wider text-slate-600;
+    }
+
     .app-content {
         @apply flex min-w-0 flex-1 flex-col;
     }
@@ -190,7 +218,7 @@
     }
 
     .app-table th {
-        @apply px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-600;
+        @apply sticky top-0 z-10 bg-slate-50 px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-600;
     }
 
     .app-table td {
@@ -198,7 +226,11 @@
     }
 
     .app-table tbody tr {
-        @apply border-t border-slate-100;
+        @apply border-t border-slate-100 transition hover:bg-slate-50;
+    }
+
+    .app-table tbody tr:nth-child(even) {
+        @apply bg-white/60;
     }
 
     .app-kpi {
@@ -241,6 +273,10 @@
         --sales-gap: 1.5rem;
         --sales-card-radius: 1.25rem;
         --sales-mobile-bar-height: 4.25rem;
+    }
+
+    .sales-shortcuts {
+        @apply mx-auto max-w-6xl rounded-2xl border border-slate-200/70 bg-white/70 px-4 py-3 text-sm shadow-sm backdrop-blur;
     }
 
     .sales-card {
@@ -335,7 +371,8 @@
     }
 
     .sales-screen-pos .sales-line {
-        background: linear-gradient(135deg, rgba(15, 118, 110, 0.06), rgba(15, 23, 42, 0.02));
+        background: linear-gradient(135deg, rgba(15, 118, 110, 0.08), rgba(15, 23, 42, 0.03));
+        box-shadow: 0 10px 24px -18px rgba(15, 23, 42, 0.6);
     }
 
     .sales-screen-pos .sales-summary .app-card {

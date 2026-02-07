@@ -18,6 +18,10 @@ class Index extends Component
     public ?string $address = null;
     public string $search = '';
 
+    protected $queryString = [
+        'search' => ['except' => ''],
+    ];
+
     protected function rules(): array
     {
         return [
