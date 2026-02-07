@@ -10,6 +10,7 @@ use App\Livewire\Reports\Cashflow as CashflowReport;
 use App\Livewire\Reports\Sales as SalesReport;
 use App\Livewire\Sales\Index as SalesIndex;
 use App\Livewire\Sales\History as SalesHistory;
+use App\Livewire\StockOuts\Index as StockOutsIndex;
 use App\Livewire\Stocks\Alerts as StocksAlerts;
 use App\Livewire\Stocks\Index as StocksIndex;
 use App\Livewire\Suppliers\Index as SuppliersIndex;
@@ -35,6 +36,8 @@ Route::middleware(['auth'])->group(function () {
         ->name('products.index');
     Route::get('stocks', StocksIndex::class)
         ->name('stocks.index');
+    Route::get('stock-outs', StockOutsIndex::class)
+        ->name('stock-outs.index');
     Route::get('stocks/alerts', StocksAlerts::class)
         ->name('stocks.alerts');
     Route::get('sales', SalesIndex::class)

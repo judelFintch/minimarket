@@ -38,6 +38,7 @@ new class extends Component
         $navItems = array_merge($navItems, [
             ['label' => 'Stock', 'route' => 'stocks.index'],
             ['label' => 'Alertes stock', 'route' => 'stocks.alerts', 'badge' => $lowStockCount],
+            ['label' => 'Sorties stock', 'route' => 'stock-outs.index'],
             ['label' => 'Produits', 'route' => 'products.index'],
             ['label' => 'Categories', 'route' => 'categories.index'],
             ['label' => 'Categories depenses', 'route' => 'expense-categories.index'],
