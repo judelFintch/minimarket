@@ -45,6 +45,7 @@ class Index extends Component
                 'unit_cost' => null,
             ],
         ];
+        $this->applySuggestedItems();
     }
 
     public function updatingSearch(): void
@@ -177,5 +178,71 @@ class Index extends Component
     {
         $user = auth()->user();
         abort_unless($user && $user->role !== 'vendeur_simple', 403);
+    }
+
+    private function applySuggestedItems(): void
+    {
+        $encoded = request()->query('suggest');
+        if (! $encoded) {
+            return;
+        }
+
+        $decoded = base64_decode($encoded, true);
+        if (! $decoded) {
+            return;
+        }
+
+        $payload = json_decode($decoded, true);
+        if (! is_array($payload)) {
+            return;
+        }
+
+        $items = $payload['items'] ?? null;
+        if (! is_array($items)) {
+            return;
+        }
+
+        $productIds = collect($items)
+            ->map(fn ($item) => (int) ($item['product_id'] ?? 0))
+            ->filter(fn ($id) => $id > 0)
+            ->unique()
+            ->values()
+            ->all();
+
+        if (empty($productIds)) {
+            return;
+        }
+
+        $products = Product::query()
+            ->whereIn('id', $productIds)
+            ->get(['id', 'cost_price'])
+            ->keyBy('id');
+
+        $hydrated = [];
+        foreach ($items as $item) {
+            $productId = (int) ($item['product_id'] ?? 0);
+            if (! $productId || ! $products->has($productId)) {
+                continue;
+            }
+
+            $quantity = (int) ($item['quantity'] ?? 0);
+            $quantity = max(1, $quantity);
+            $unitCost = $item['unit_cost'] ?? null;
+            $unitCost = is_numeric($unitCost) ? (float) $unitCost : (float) ($products[$productId]->cost_price ?? 0);
+
+            $hydrated[] = [
+                'product_id' => $productId,
+                'quantity' => $quantity,
+                'unit_cost' => $unitCost,
+            ];
+        }
+
+        if (empty($hydrated)) {
+            return;
+        }
+
+        $supplierId = (int) ($payload['supplier_id'] ?? 0);
+        $this->supplier_id = $supplierId > 0 ? $supplierId : null;
+        $this->items = $hydrated;
     }
 }

@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -10,6 +11,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
 class Product extends Model
 {
+    use HasFactory;
+
     protected $fillable = [
         'category_id',
         'name',
@@ -22,6 +25,8 @@ class Product extends Model
         'promo_label',
         'promo_price',
         'currency',
+        'min_stock',
+        'reorder_qty',
         'archived_at',
     ];
 
@@ -29,6 +34,8 @@ class Product extends Model
         'promo_price' => 'decimal:2',
         'sale_price' => 'decimal:2',
         'cost_price' => 'decimal:2',
+        'min_stock' => 'integer',
+        'reorder_qty' => 'integer',
         'archived_at' => 'datetime',
     ];
 

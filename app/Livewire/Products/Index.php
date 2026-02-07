@@ -24,6 +24,8 @@ class Index extends Component
     public ?float $sale_price = null;
     public string $currency = 'CDF';
     public int $stock_quantity = 0;
+    public int $min_stock = 0;
+    public int $reorder_qty = 0;
     public string $search = '';
     public string $deleteError = '';
     public bool $showArchived = false;
@@ -50,6 +52,8 @@ class Index extends Component
             'sale_price' => ['nullable', 'numeric', 'min:0'],
             'currency' => ['required', 'string', 'size:3', Rule::in(['CDF', 'USD', 'EUR'])],
             'stock_quantity' => ['required', 'integer', 'min:0'],
+            'min_stock' => ['required', 'integer', 'min:0'],
+            'reorder_qty' => ['required', 'integer', 'min:0'],
         ];
     }
 
@@ -79,6 +83,8 @@ class Index extends Component
         $this->sale_price = $product->sale_price;
         $this->currency = $product->currency ?? 'CDF';
         $this->stock_quantity = $product->stock?->quantity ?? 0;
+        $this->min_stock = $product->min_stock ?? 0;
+        $this->reorder_qty = $product->reorder_qty ?? 0;
     }
 
     public function resetForm(): void
@@ -95,6 +101,8 @@ class Index extends Component
             'sale_price',
             'currency',
             'stock_quantity',
+            'min_stock',
+            'reorder_qty',
         ]);
     }
 
@@ -115,6 +123,8 @@ class Index extends Component
                 'cost_price' => $validated['cost_price'],
                 'sale_price' => $validated['sale_price'],
                 'currency' => $validated['currency'],
+                'min_stock' => $validated['min_stock'],
+                'reorder_qty' => $validated['reorder_qty'],
             ]
         );
 

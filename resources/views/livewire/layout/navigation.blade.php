@@ -1,6 +1,7 @@
 <?php
 
 use App\Livewire\Actions\Logout;
+use App\Models\Product;
 use Livewire\Volt\Component;
 
 new class extends Component
@@ -19,6 +20,14 @@ new class extends Component
 @php
     $user = auth()->user();
     $role = $user?->role ?? 'vendeur';
+    $lowStockCount = 0;
+    if ($role !== 'vendeur_simple') {
+        $lowStockCount = Product::query()
+            ->leftJoin('stocks', 'stocks.product_id', '=', 'products.id')
+            ->whereNull('products.archived_at')
+            ->whereRaw('COALESCE(stocks.quantity, 0) <= products.min_stock')
+            ->count();
+    }
     $navItems = [
         ['label' => 'Dashboard', 'route' => 'dashboard'],
         ['label' => 'Ventes', 'route' => 'sales.index'],
@@ -28,11 +37,15 @@ new class extends Component
     if ($role !== 'vendeur_simple') {
         $navItems = array_merge($navItems, [
             ['label' => 'Stock', 'route' => 'stocks.index'],
+            ['label' => 'Alertes stock', 'route' => 'stocks.alerts', 'badge' => $lowStockCount],
             ['label' => 'Produits', 'route' => 'products.index'],
             ['label' => 'Categories', 'route' => 'categories.index'],
+            ['label' => 'Categories depenses', 'route' => 'expense-categories.index'],
             ['label' => 'Fournisseurs', 'route' => 'suppliers.index'],
             ['label' => 'Achats', 'route' => 'purchases.index'],
-            ['label' => 'Rapports', 'route' => 'reports.sales'],
+            ['label' => 'Depenses', 'route' => 'expenses.index'],
+            ['label' => 'Rapports ventes', 'route' => 'reports.sales'],
+            ['label' => 'Solde caisse', 'route' => 'reports.cashflow'],
         ]);
     }
 
@@ -60,6 +73,9 @@ new class extends Component
                     wire:navigate
                     class="whitespace-nowrap rounded-full px-4 py-2 {{ $active ? 'bg-teal-50 text-teal-700' : 'bg-slate-100 text-slate-600' }}">
                     {{ $item['label'] }}
+                    @if (! empty($item['badge']))
+                        <span class="ml-2 rounded-full bg-rose-100 px-2 py-0.5 text-xs font-semibold text-rose-700">{{ $item['badge'] }}</span>
+                    @endif
                 </a>
             @endforeach
         </div>
@@ -81,7 +97,10 @@ new class extends Component
                     wire:navigate
                     class="app-sidebar-link {{ $active ? 'app-sidebar-link-active' : '' }}">
                     <span class="app-sidebar-dot {{ $active ? 'app-sidebar-dot-active' : '' }}"></span>
-                    {{ $item['label'] }}
+                    <span class="flex-1">{{ $item['label'] }}</span>
+                    @if (! empty($item['badge']))
+                        <span class="rounded-full bg-rose-100 px-2 py-0.5 text-xs font-semibold text-rose-700">{{ $item['badge'] }}</span>
+                    @endif
                 </a>
             @endforeach
         </nav>

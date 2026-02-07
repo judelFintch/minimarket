@@ -79,6 +79,18 @@
                     @error('stock_quantity') <p class="mt-1 text-xs text-red-600">{{ $message }}</p> @enderror
                 </div>
 
+                <div>
+                    <label class="app-label">Seuil alerte</label>
+                    <input type="number" min="0" wire:model.live="min_stock" class="app-input" />
+                    @error('min_stock') <p class="mt-1 text-xs text-red-600">{{ $message }}</p> @enderror
+                </div>
+
+                <div>
+                    <label class="app-label">Qté reappro</label>
+                    <input type="number" min="0" wire:model.live="reorder_qty" class="app-input" />
+                    @error('reorder_qty') <p class="mt-1 text-xs text-red-600">{{ $message }}</p> @enderror
+                </div>
+
                 <div class="flex items-center gap-3 lg:col-span-4">
                     <button type="submit" class="app-btn-primary">
                         {{ $productId ? 'Mettre a jour' : 'Ajouter' }}
@@ -122,6 +134,8 @@
                             <th>Categorie</th>
                             <th>SKU</th>
                             <th>Stock</th>
+                            <th>Seuil</th>
+                            <th>Reappro</th>
                             <th>Prix vente</th>
                             <th>Devise</th>
                             <th class="text-right">Actions</th>
@@ -134,6 +148,8 @@
                                 <td>{{ $product->category?->name ?? '—' }}</td>
                                 <td>{{ $product->sku ?? '—' }}</td>
                                 <td>{{ $product->stock?->quantity ?? 0 }}</td>
+                                <td>{{ $product->min_stock ?? 0 }}</td>
+                                <td>{{ $product->reorder_qty ?? 0 }}</td>
                                 <td>
                                     {{ $product->sale_price !== null ? number_format($product->sale_price, 2) : '—' }}
                                 </td>
@@ -145,7 +161,7 @@
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="6" class="px-4 py-6 text-center text-sm text-slate-500">Aucun produit trouve.</td>
+                                <td colspan="9" class="px-4 py-6 text-center text-sm text-slate-500">Aucun produit trouve.</td>
                             </tr>
                         @endforelse
                     </tbody>
@@ -174,6 +190,8 @@
                                 <th>Categorie</th>
                             <th>SKU</th>
                             <th>Stock</th>
+                            <th>Seuil</th>
+                            <th>Reappro</th>
                             <th>Prix vente</th>
                             <th>Devise</th>
                             <th class="text-right">Actions</th>
@@ -186,6 +204,8 @@
                                 <td>{{ $product->category?->name ?? '—' }}</td>
                                 <td>{{ $product->sku ?? '—' }}</td>
                                 <td>{{ $product->stock?->quantity ?? 0 }}</td>
+                                <td>{{ $product->min_stock ?? 0 }}</td>
+                                <td>{{ $product->reorder_qty ?? 0 }}</td>
                                 <td>
                                     {{ $product->sale_price !== null ? number_format($product->sale_price, 2) : '—' }}
                                 </td>
@@ -196,7 +216,7 @@
                                 </tr>
                             @empty
                                 <tr>
-                                    <td colspan="6" class="px-4 py-6 text-center text-sm text-slate-500">Aucun produit archive.</td>
+                                    <td colspan="9" class="px-4 py-6 text-center text-sm text-slate-500">Aucun produit archive.</td>
                                 </tr>
                             @endforelse
                         </tbody>
