@@ -46,7 +46,7 @@
     }
 
     .app-sidebar {
-        @apply hidden w-72 flex-col border-r border-slate-200/70 bg-white/70 backdrop-blur lg:flex;
+        @apply hidden w-72 flex-col border-r border-slate-200/70 bg-white/80 backdrop-blur lg:flex;
     }
 
     .app-sidebar-header {
@@ -62,27 +62,39 @@
     }
 
     .app-sidebar-nav {
-        @apply flex flex-1 flex-col gap-2 px-4 py-6;
+        @apply flex flex-1 flex-col gap-6 px-4 py-6;
+    }
+
+    .app-sidebar-section {
+        @apply space-y-3;
+    }
+
+    .app-sidebar-section-title {
+        @apply px-2 text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-400;
     }
 
     .app-sidebar-link {
-        @apply flex items-center gap-3 rounded-xl px-4 py-2.5 text-sm font-semibold text-slate-600 transition hover:bg-slate-100 hover:text-slate-900;
+        @apply flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-semibold text-slate-600 transition hover:bg-slate-100 hover:text-slate-900;
     }
 
     .app-sidebar-link-active {
-        @apply bg-teal-50 text-teal-700 shadow-sm ring-1 ring-teal-100;
+        @apply bg-gradient-to-r from-teal-50 via-emerald-50 to-transparent text-teal-700 shadow-sm ring-1 ring-teal-100;
     }
 
     .app-sidebar-dot {
-        @apply h-2.5 w-2.5 rounded-full bg-slate-300;
+        @apply h-2.5 w-2.5 rounded-full bg-slate-300 shadow-sm;
     }
 
     .app-sidebar-dot-active {
         @apply bg-teal-500;
     }
 
+    .app-nav-badge {
+        @apply rounded-full bg-rose-100 px-2 py-0.5 text-xs font-semibold text-rose-700;
+    }
+
     .app-topbar {
-        @apply flex items-center justify-between border-b border-slate-200/70 bg-white/80 px-4 py-4 backdrop-blur lg:hidden;
+        @apply flex items-center justify-between border-b border-slate-200/70 bg-white/85 px-4 py-4 backdrop-blur lg:hidden;
     }
 
     .app-topbar-title {
