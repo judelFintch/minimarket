@@ -20,19 +20,33 @@ class Index extends Component
     use WithPagination;
 
     public ?string $customer_name = null;
+
     public ?string $sold_at = null;
+
     public array $items = [];
+
     public string $barcodeInput = '';
+
     public string $productSearch = '';
+
     public float $discountRate = 0;
+
     public float $taxRate = 0;
+
     public ?int $lastInvoiceId = null;
+
     public float $amountReceived = 0;
+
     public string $screenMode = 'pc';
+
     public bool $checkout = false;
+
     public ?int $selectedProductId = null;
+
     public int $selectedQuantity = 1;
+
     public float $selectedDiscountRate = 0;
+
     public ?float $selectedUnitPrice = null;
 
     protected function rules(): array
@@ -123,6 +137,7 @@ class Index extends Component
                 $this->items[$index]['unit_price'] = $price;
                 $this->items[$index]['discount_rate'] = $discountRate;
                 $this->resetSelectedItem();
+
                 return;
             }
         }
@@ -201,6 +216,7 @@ class Index extends Component
 
         if (! $value) {
             $this->items[$index]['unit_price'] = null;
+
             return;
         }
 
@@ -213,6 +229,7 @@ class Index extends Component
     {
         if (! $value) {
             $this->selectedUnitPrice = null;
+
             return;
         }
 
@@ -268,6 +285,7 @@ class Index extends Component
             ->get(['id', 'sale_price', 'promo_price'])
             ->mapWithKeys(function ($product) {
                 $price = $product->promo_price !== null ? (float) $product->promo_price : (float) $product->sale_price;
+
                 return [$product->id => $price];
             });
 
@@ -275,6 +293,7 @@ class Index extends Component
             $price = (float) ($prices[$item['product_id']] ?? 0);
             $item['unit_price'] = $price;
             $item['discount_rate'] = (float) ($item['discount_rate'] ?? 0);
+
             return $item;
         })->all();
     }
@@ -344,7 +363,7 @@ class Index extends Component
 
             $sale = Sale::create([
                 'user_id' => auth()->id(),
-                'reference' => 'SALE-' . now()->format('YmdHis') . '-' . Str::upper(Str::random(4)),
+                'reference' => 'SALE-'.now()->format('YmdHis').'-'.Str::upper(Str::random(4)),
                 'customer_name' => $validated['customer_name'],
                 'total_amount' => $totals['total'],
                 'subtotal_amount' => $totals['subtotal'],
@@ -391,7 +410,7 @@ class Index extends Component
                     'product_id' => $productId,
                     'type' => 'out',
                     'quantity' => $requiredQty,
-                    'reason' => 'Vente ' . $sale->reference,
+                    'reason' => 'Vente '.$sale->reference,
                     'occurred_at' => $validated['sold_at'],
                     'created_at' => now(),
                     'updated_at' => now(),
@@ -403,7 +422,7 @@ class Index extends Component
 
             $invoice = Invoice::create([
                 'sale_id' => $sale->id,
-                'invoice_number' => 'INV-' . now()->format('YmdHis') . '-' . Str::upper(Str::random(4)),
+                'invoice_number' => 'INV-'.now()->format('YmdHis').'-'.Str::upper(Str::random(4)),
                 'total_amount' => $totals['total'],
                 'status' => 'paid',
                 'issued_at' => $validated['sold_at'],
@@ -487,7 +506,7 @@ class Index extends Component
 
             $sale = Sale::create([
                 'user_id' => auth()->id(),
-                'reference' => 'SALE-' . now()->format('YmdHis') . '-' . Str::upper(Str::random(4)),
+                'reference' => 'SALE-'.now()->format('YmdHis').'-'.Str::upper(Str::random(4)),
                 'customer_name' => $validated['customer_name'],
                 'total_amount' => $totals['total'],
                 'subtotal_amount' => $totals['subtotal'],
@@ -527,7 +546,12 @@ class Index extends Component
 
     public function finalizeSale(int $saleId): void
     {
-        $sale = Sale::query()->with('items')->findOrFail($saleId);
+        $saleQuery = Sale::query()->with('items')->whereKey($saleId);
+        if (! auth()->user()?->isAdmin()) {
+            $saleQuery->where('user_id', auth()->id());
+        }
+
+        $sale = $saleQuery->firstOrFail();
 
         if ($sale->status === 'paid') {
             return;
@@ -567,7 +591,7 @@ class Index extends Component
                     'product_id' => $productId,
                     'type' => 'out',
                     'quantity' => $requiredQty,
-                    'reason' => 'Vente ' . $sale->reference,
+                    'reason' => 'Vente '.$sale->reference,
                     'occurred_at' => $sale->sold_at ?? now(),
                 ]);
             }
@@ -586,7 +610,7 @@ class Index extends Component
             if (! $sale->invoice) {
                 Invoice::create([
                     'sale_id' => $sale->id,
-                    'invoice_number' => 'INV-' . now()->format('YmdHis') . '-' . Str::upper(Str::random(4)),
+                    'invoice_number' => 'INV-'.now()->format('YmdHis').'-'.Str::upper(Str::random(4)),
                     'total_amount' => $totals['total'],
                     'status' => 'paid',
                     'issued_at' => $sale->sold_at ?? now(),
@@ -609,7 +633,7 @@ class Index extends Component
         if ($this->productSearch !== '') {
             $filteredProducts = Product::query()
                 ->with('stock')
-                ->where('name', 'like', '%' . $this->productSearch . '%')
+                ->where('name', 'like', '%'.$this->productSearch.'%')
                 ->orderBy('name')
                 ->limit(6)
                 ->get();
@@ -651,7 +675,7 @@ class Index extends Component
                 $caseSql = 'CASE id ';
                 $bindings = [];
                 foreach (array_values($frequentProductIds) as $index => $productId) {
-                    $caseSql .= 'WHEN ? THEN ' . $index . ' ';
+                    $caseSql .= 'WHEN ? THEN '.$index.' ';
                     $bindings[] = $productId;
                 }
                 $caseSql .= 'END';
