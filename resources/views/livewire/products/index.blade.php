@@ -18,13 +18,13 @@
                 <form wire:submit.prevent="saveProduct" class="grid gap-4 lg:grid-cols-4">
                 <div class="lg:col-span-2">
                     <label class="app-label">Nom</label>
-                    <input type="text" wire:model.live="name" class="app-input" />
+                    <input type="text" wire:model="name" class="app-input" />
                     @error('name') <p class="mt-1 text-xs text-red-600">{{ $message }}</p> @enderror
                 </div>
 
                 <div>
                     <label class="app-label">Categorie</label>
-                    <select wire:model.live="categoryId" class="app-select">
+                    <select wire:model="categoryId" class="app-select">
                         <option value="">Sans categorie</option>
                         @foreach ($categories as $category)
                             <option value="{{ $category->id }}">{{ $category->name }}</option>
@@ -35,37 +35,37 @@
 
                 <div>
                     <label class="app-label">Unite</label>
-                    <input type="text" wire:model.live="unit" placeholder="piece, kg, litre" class="app-input" />
+                    <input type="text" wire:model="unit" placeholder="piece, kg, litre" class="app-input" />
                     @error('unit') <p class="mt-1 text-xs text-red-600">{{ $message }}</p> @enderror
                 </div>
 
                 <div>
                     <label class="app-label">SKU</label>
-                    <input type="text" wire:model.live="sku" class="app-input" />
+                    <input type="text" wire:model="sku" class="app-input" />
                     @error('sku') <p class="mt-1 text-xs text-red-600">{{ $message }}</p> @enderror
                 </div>
 
                 <div>
                     <label class="app-label">Code-barres</label>
-                    <input type="text" wire:model.live="barcode" class="app-input" />
+                    <input type="text" wire:model="barcode" class="app-input" />
                     @error('barcode') <p class="mt-1 text-xs text-red-600">{{ $message }}</p> @enderror
                 </div>
 
                 <div>
                     <label class="app-label">Prix d'achat</label>
-                    <input type="number" step="0.01" wire:model.live="cost_price" class="app-input" />
+                    <input type="number" step="0.01" wire:model="cost_price" class="app-input" />
                     @error('cost_price') <p class="mt-1 text-xs text-red-600">{{ $message }}</p> @enderror
                 </div>
 
                 <div>
                     <label class="app-label">Prix de vente</label>
-                    <input type="number" step="0.01" wire:model.live="sale_price" class="app-input" />
+                    <input type="number" step="0.01" wire:model="sale_price" class="app-input" />
                     @error('sale_price') <p class="mt-1 text-xs text-red-600">{{ $message }}</p> @enderror
                 </div>
 
                 <div>
                     <label class="app-label">Devise</label>
-                    <select wire:model.live="currency" class="app-select">
+                    <select wire:model="currency" class="app-select">
                         <option value="CDF">CDF</option>
                         <option value="USD">USD</option>
                         <option value="EUR">EUR</option>
@@ -75,19 +75,19 @@
 
                 <div>
                     <label class="app-label">Stock initial</label>
-                    <input type="number" min="0" wire:model.live="stock_quantity" class="app-input" />
+                    <input type="number" min="0" wire:model="stock_quantity" class="app-input" />
                     @error('stock_quantity') <p class="mt-1 text-xs text-red-600">{{ $message }}</p> @enderror
                 </div>
 
                 <div>
                     <label class="app-label">Seuil alerte</label>
-                    <input type="number" min="0" wire:model.live="min_stock" class="app-input" />
+                    <input type="number" min="0" wire:model="min_stock" class="app-input" />
                     @error('min_stock') <p class="mt-1 text-xs text-red-600">{{ $message }}</p> @enderror
                 </div>
 
                 <div>
                     <label class="app-label">Qté reappro</label>
-                    <input type="number" min="0" wire:model.live="reorder_qty" class="app-input" />
+                    <input type="number" min="0" wire:model="reorder_qty" class="app-input" />
                     @error('reorder_qty') <p class="mt-1 text-xs text-red-600">{{ $message }}</p> @enderror
                 </div>
 
@@ -113,10 +113,10 @@
                 </div>
                 <div class="flex flex-wrap items-center gap-3">
                     <label class="inline-flex items-center gap-2 text-sm text-slate-600">
-                        <input type="checkbox" wire:model.live="showArchived" class="rounded border-slate-300 text-teal-600 focus:ring-teal-500" />
+                        <input type="checkbox" wire:model="showArchived" class="rounded border-slate-300 text-teal-600 focus:ring-teal-500" />
                         Afficher archives
                     </label>
-                    <input type="text" wire:model.live.debounce.300ms="search" placeholder="Rechercher..." class="app-input sm:max-w-xs" />
+                    <input type="text" wire:model.debounce.300ms="search" placeholder="Rechercher..." class="app-input sm:max-w-xs" />
                 </div>
             </div>
 
