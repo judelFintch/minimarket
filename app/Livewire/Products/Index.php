@@ -6,6 +6,7 @@ use App\Models\Category;
 use App\Models\Product;
 use App\Models\Stock;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Livewire\Component;
@@ -207,53 +208,68 @@ class Index extends Component
             return;
         }
 
-        $lineNumber = 1;
-        while (($row = fgetcsv($handle, 0, $delimiter)) !== false) {
-            $lineNumber++;
-            if ($this->rowIsEmpty($row)) {
-                continue;
+        DB::beginTransaction();
+        try {
+            $lineNumber = 1;
+            while (($row = fgetcsv($handle, 0, $delimiter)) !== false) {
+                $lineNumber++;
+                if ($this->rowIsEmpty($row)) {
+                    continue;
+                }
+
+                $rawData = $this->mapRow($row, $headerMap);
+                [$errors, $data] = $this->sanitizeImportRow($rawData, $lineNumber);
+                if ($errors !== []) {
+                    $this->importErrors = array_merge($this->importErrors, $errors);
+                    $this->skippedCount++;
+                    continue;
+                }
+
+                $categoryId = $this->resolveCategoryId($data);
+                $product = $this->findExistingProduct($data);
+
+                $payload = [
+                    'category_id' => $categoryId,
+                    'name' => $data['name'],
+                    'sku' => $data['sku'],
+                    'barcode' => $data['barcode'],
+                    'unit' => $data['unit'],
+                    'cost_price' => $data['cost_price'],
+                    'sale_price' => $data['sale_price'],
+                    'currency' => $data['currency'],
+                    'min_stock' => $data['min_stock'],
+                    'reorder_qty' => $data['reorder_qty'],
+                ];
+
+                if ($product) {
+                    $product->update($payload);
+                } else {
+                    $product = Product::query()->create($payload);
+                }
+
+                Stock::updateOrCreate(
+                    ['product_id' => $product->id],
+                    ['quantity' => $data['stock_quantity']]
+                );
+
+                $this->importedCount++;
             }
 
-            $rawData = $this->mapRow($row, $headerMap);
-            [$errors, $data] = $this->sanitizeImportRow($rawData, $lineNumber);
-            if ($errors !== []) {
-                $this->importErrors = array_merge($this->importErrors, $errors);
-                $this->skippedCount++;
-                continue;
-            }
-
-            $categoryId = $this->resolveCategoryId($data);
-            $product = $this->findExistingProduct($data);
-
-            $payload = [
-                'category_id' => $categoryId,
-                'name' => $data['name'],
-                'sku' => $data['sku'],
-                'barcode' => $data['barcode'],
-                'unit' => $data['unit'],
-                'cost_price' => $data['cost_price'],
-                'sale_price' => $data['sale_price'],
-                'currency' => $data['currency'],
-                'min_stock' => $data['min_stock'],
-                'reorder_qty' => $data['reorder_qty'],
-            ];
-
-            if ($product) {
-                $product->update($payload);
+            if ($this->importErrors !== []) {
+                DB::rollBack();
+                $this->importedCount = 0;
+                $this->importErrors[] = 'Import annule: des erreurs ont ete detectees.';
             } else {
-                $product = Product::query()->create($payload);
+                DB::commit();
             }
-
-            Stock::updateOrCreate(
-                ['product_id' => $product->id],
-                ['quantity' => $data['stock_quantity']]
-            );
-
-            $this->importedCount++;
+        } catch (\Throwable $exception) {
+            DB::rollBack();
+            $this->importErrors[] = 'Import annule: une erreur est survenue.';
+            report($exception);
+        } finally {
+            fclose($handle);
+            $this->importFile = null;
         }
-
-        fclose($handle);
-        $this->importFile = null;
     }
 
     public function exportProducts(): StreamedResponse

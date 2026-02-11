@@ -52,4 +52,31 @@ class ProductsCsvImportTest extends TestCase
             'quantity' => 12,
         ]);
     }
+
+    public function test_import_rolls_back_when_row_has_errors(): void
+    {
+        $user = User::factory()->create();
+        $csv = implode("\n", [
+            'name,sku,barcode,unit,cost_price,sale_price,currency,stock_quantity,min_stock,reorder_qty,category',
+            'Produit OK,SKU-OK,BAR-OK,pcs,100,150,CDF,5,1,2,Food',
+            'Produit KO,SKU-KO,BAR-KO,pcs,abc,150,CDF,5,1,2,Food',
+        ]);
+
+        $file = UploadedFile::fake()->createWithContent('products.csv', $csv);
+
+        Livewire::actingAs($user)
+            ->test(Index::class)
+            ->set('importFile', $file)
+            ->call('importProducts')
+            ->assertSet('importedCount', 0)
+            ->assertSet('skippedCount', 1)
+            ->assertSee('Import annule: des erreurs ont ete detectees.');
+
+        $this->assertDatabaseMissing('products', [
+            'sku' => 'SKU-OK',
+        ]);
+        $this->assertDatabaseMissing('products', [
+            'sku' => 'SKU-KO',
+        ]);
+    }
 }
