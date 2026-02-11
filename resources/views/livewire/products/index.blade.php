@@ -9,6 +9,46 @@
     <div class="mx-auto max-w-6xl space-y-8">
         <div class="app-card">
             <div class="app-card-header">
+                <div>
+                    <h3 class="app-card-title">Import / Export CSV</h3>
+                    <p class="app-card-subtitle">Fichier CSV compatible Excel.</p>
+                </div>
+                <div class="flex flex-wrap items-center gap-3">
+                    <button type="button" wire:click="exportProducts" class="app-btn-secondary">Exporter CSV</button>
+                    <button type="button" wire:click="downloadTemplate" class="app-btn-ghost text-teal-600 hover:text-teal-700">Modele CSV</button>
+                </div>
+            </div>
+
+            <div class="app-card-body space-y-4">
+                <form wire:submit.prevent="importProducts" class="flex flex-col gap-3 sm:flex-row sm:items-end">
+                    <div class="flex-1">
+                        <label class="app-label">Importer un CSV</label>
+                        <input type="file" wire:model="importFile" accept=".csv,text/csv" class="app-input" />
+                        @error('importFile') <p class="mt-1 text-xs text-red-600">{{ $message }}</p> @enderror
+                    </div>
+                    <button type="submit" class="app-btn-primary">Importer</button>
+                </form>
+
+                @if ($importedCount > 0 || $skippedCount > 0)
+                    <div class="rounded-lg border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700">
+                        Import termine: {{ $importedCount }} lignes importees, {{ $skippedCount }} ignorees.
+                    </div>
+                @endif
+
+                @if ($importErrors !== [])
+                    <div class="rounded-lg border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
+                        <ul class="space-y-1">
+                            @foreach ($importErrors as $error)
+                                <li>{{ $error }}</li>
+                            @endforeach
+                        </ul>
+                    </div>
+                @endif
+            </div>
+        </div>
+
+        <div class="app-card">
+            <div class="app-card-header">
                 <h3 class="app-card-title">
                     {{ $productId ? 'Modifier un produit' : 'Nouveau produit' }}
                 </h3>
