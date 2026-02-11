@@ -2,16 +2,17 @@
 
 namespace App\Models;
 
-// use Illuminate\Contracts\Auth\MustVerifyEmail;
+use Illuminate\Auth\MustVerifyEmail;
+use Illuminate\Contracts\Auth\MustVerifyEmail as MustVerifyEmailContract;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
-class User extends Authenticatable
+class User extends Authenticatable implements MustVerifyEmailContract
 {
     /** @use HasFactory<\Database\Factories\UserFactory> */
-    use HasFactory, Notifiable;
+    use HasFactory, MustVerifyEmail, Notifiable;
 
     /**
      * The attributes that are mass assignable.
@@ -24,6 +25,9 @@ class User extends Authenticatable
         'password',
         'screen_mode',
         'role',
+        'email_verified_at',
+        'suspended_at',
+        'suspension_reason',
     ];
 
     /**
@@ -48,6 +52,8 @@ class User extends Authenticatable
             'password' => 'hashed',
             'screen_mode' => 'string',
             'role' => 'string',
+            'suspended_at' => 'datetime',
+            'suspension_reason' => 'string',
         ];
     }
 
@@ -70,5 +76,26 @@ class User extends Authenticatable
     {
         return $this->belongsToMany(Product::class, 'favorite_products')
             ->withTimestamps();
+    }
+
+    public function isSuspended(): bool
+    {
+        return $this->suspended_at !== null;
+    }
+
+    public function suspend(?string $reason = null): void
+    {
+        $this->update([
+            'suspended_at' => now(),
+            'suspension_reason' => $reason,
+        ]);
+    }
+
+    public function unsuspend(): void
+    {
+        $this->update([
+            'suspended_at' => null,
+            'suspension_reason' => null,
+        ]);
     }
 }

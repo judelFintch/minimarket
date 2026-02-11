@@ -25,10 +25,10 @@ Route::get('dashboard', Dashboard::class)
     ->name('dashboard');
 
 Route::view('profile', 'profile')
-    ->middleware(['auth'])
+    ->middleware(['auth', 'verified'])
     ->name('profile');
 
-Route::middleware(['auth'])->group(function () {
+Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('categories', CategoriesIndex::class)
         ->name('categories.index');
     Route::get('expense-categories', ExpenseCategoriesIndex::class)

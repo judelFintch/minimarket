@@ -7,6 +7,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
+use App\Models\User;
 use Livewire\Attributes\Validate;
 use Livewire\Form;
 
@@ -29,6 +30,13 @@ class LoginForm extends Form
     public function authenticate(): void
     {
         $this->ensureIsNotRateLimited();
+
+        $user = User::query()->where('email', $this->email)->first();
+        if ($user?->isSuspended()) {
+            throw ValidationException::withMessages([
+                'form.email' => 'Compte suspendu.',
+            ]);
+        }
 
         if (! Auth::attempt($this->only(['email', 'password']), $this->remember)) {
             RateLimiter::hit($this->throttleKey());

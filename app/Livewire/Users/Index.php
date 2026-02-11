@@ -18,6 +18,10 @@ class Index extends Component
     public ?string $password = null;
     public string $role = 'vendeur';
     public string $search = '';
+    public ?string $suspension_reason = null;
+    public bool $isSuspended = false;
+    public bool $isVerified = false;
+    public string $suspensionError = '';
 
     protected function rules(): array
     {
@@ -54,12 +58,16 @@ class Index extends Component
         $this->email = $user->email;
         $this->password = null;
         $this->role = $user->role ?? 'vendeur';
+        $this->suspension_reason = $user->suspension_reason;
+        $this->isSuspended = $user->isSuspended();
+        $this->isVerified = $user->hasVerifiedEmail();
     }
 
     public function resetForm(): void
     {
-        $this->reset(['userId', 'name', 'email', 'password', 'role']);
+        $this->reset(['userId', 'name', 'email', 'password', 'role', 'suspension_reason', 'isSuspended', 'isVerified']);
         $this->role = 'vendeur';
+        $this->suspensionError = '';
     }
 
     public function saveUser(): void
@@ -80,6 +88,48 @@ class Index extends Component
         User::updateOrCreate(['id' => $this->userId], $data);
 
         $this->resetForm();
+    }
+
+    public function suspendUser(int $userId): void
+    {
+        $this->authorizeAccess();
+        $this->suspensionError = '';
+
+        if (auth()->id() === $userId) {
+            $this->suspensionError = 'Impossible de suspendre votre propre compte.';
+            return;
+        }
+
+        $user = User::query()->findOrFail($userId);
+        $user->suspend($this->suspension_reason);
+        $this->isSuspended = true;
+    }
+
+    public function unsuspendUser(int $userId): void
+    {
+        $this->authorizeAccess();
+        $this->suspensionError = '';
+
+        $user = User::query()->findOrFail($userId);
+        $user->unsuspend();
+        $this->isSuspended = false;
+        $this->suspension_reason = null;
+    }
+
+    public function verifyUser(int $userId): void
+    {
+        $this->authorizeAccess();
+        $user = User::query()->findOrFail($userId);
+        $user->forceFill(['email_verified_at' => now()])->save();
+        $this->isVerified = true;
+    }
+
+    public function unverifyUser(int $userId): void
+    {
+        $this->authorizeAccess();
+        $user = User::query()->findOrFail($userId);
+        $user->forceFill(['email_verified_at' => null])->save();
+        $this->isVerified = false;
     }
 
     private function authorizeAccess(): void
