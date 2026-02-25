@@ -22,14 +22,27 @@ class DatabaseSeeder extends Seeder
     {
         $faker = \Faker\Factory::create('fr_FR');
 
+        $adminEmail = env('SEED_ADMIN_EMAIL', 'admin@minimarket.test');
+        $adminPassword = env('SEED_ADMIN_PASSWORD', 'password');
+        $cashierEmail = env('SEED_CASHIER_EMAIL', 'caisse@minimarket.test');
+        $cashierPassword = env('SEED_CASHIER_PASSWORD', 'password');
+
+        if (app()->environment('production')) {
+            $missingAdmin = ! env('SEED_ADMIN_EMAIL') || ! env('SEED_ADMIN_PASSWORD');
+            $missingCashier = ! env('SEED_CASHIER_EMAIL') || ! env('SEED_CASHIER_PASSWORD');
+            if ($missingAdmin || $missingCashier) {
+                throw new \RuntimeException('Production: define SEED_ADMIN_EMAIL/SEED_ADMIN_PASSWORD and SEED_CASHIER_EMAIL/SEED_CASHIER_PASSWORD before seeding.');
+            }
+        }
+
         $admin = User::firstOrCreate(
-            ['email' => 'admin@minimarket.test'],
-            ['name' => 'Administrateur', 'password' => Hash::make('password'), 'role' => 'admin']
+            ['email' => $adminEmail],
+            ['name' => 'Administrateur', 'password' => Hash::make($adminPassword), 'role' => 'admin']
         );
 
         $cashier = User::firstOrCreate(
-            ['email' => 'caisse@minimarket.test'],
-            ['name' => 'Caissier', 'password' => Hash::make('password'), 'role' => 'vendeur']
+            ['email' => $cashierEmail],
+            ['name' => 'Caissier', 'password' => Hash::make($cashierPassword), 'role' => 'vendeur']
         );
 
         $csvPath = database_path('seeders/data/update_articles_normalized.csv');
