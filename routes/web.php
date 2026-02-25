@@ -21,14 +21,14 @@ use Illuminate\Support\Facades\Route;
 Route::redirect('/', '/login');
 
 Route::get('dashboard', Dashboard::class)
-    ->middleware(['auth', 'verified'])
+    ->middleware(['auth'])
     ->name('dashboard');
 
 Route::view('profile', 'profile')
-    ->middleware(['auth', 'verified'])
+    ->middleware(['auth'])
     ->name('profile');
 
-Route::middleware(['auth', 'verified'])->group(function () {
+Route::middleware(['auth'])->group(function () {
     Route::get('categories', CategoriesIndex::class)
         ->name('categories.index');
     Route::get('expense-categories', ExpenseCategoriesIndex::class)
