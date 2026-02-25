@@ -17,6 +17,7 @@ use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Str;
 
 class DatabaseSeeder extends Seeder
 {
@@ -39,58 +40,109 @@ class DatabaseSeeder extends Seeder
             ['name' => 'Caissier', 'password' => Hash::make('password'), 'role' => 'vendeur']
         );
 
-        $categories = [
-            'Epicerie',
-            'Boissons',
-            'Produits frais',
-            'Hygiene',
-            'Snacking',
-            'Boulangerie',
-        ];
-
-        $categoryMap = [];
-        foreach ($categories as $categoryName) {
-            $categoryMap[$categoryName] = Category::firstOrCreate(['name' => $categoryName]);
+        $csvPath = database_path('seeders/data/update_articles_normalized.csv');
+        if (!file_exists($csvPath)) {
+            throw new \RuntimeException("CSV introuvable: {$csvPath}");
         }
 
-        $products = [
-            ['name' => 'Riz 1kg', 'category' => 'Epicerie', 'sku' => 'RIZ-001', 'barcode' => '100000000001', 'unit' => 'kg', 'cost' => 2.20, 'sale' => 3.90],
-            ['name' => 'Pates 500g', 'category' => 'Epicerie', 'sku' => 'PAT-001', 'barcode' => '100000000002', 'unit' => 'g', 'cost' => 0.80, 'sale' => 1.60],
-            ['name' => 'Huile 1L', 'category' => 'Epicerie', 'sku' => 'HUI-001', 'barcode' => '100000000003', 'unit' => 'L', 'cost' => 2.90, 'sale' => 4.50],
-            ['name' => 'Jus d\'orange 1L', 'category' => 'Boissons', 'sku' => 'JUS-001', 'barcode' => '100000000004', 'unit' => 'L', 'cost' => 1.50, 'sale' => 2.50],
-            ['name' => 'Eau minerale 1.5L', 'category' => 'Boissons', 'sku' => 'EAU-001', 'barcode' => '100000000005', 'unit' => 'L', 'cost' => 0.60, 'sale' => 1.20],
-            ['name' => 'Lait 1L', 'category' => 'Produits frais', 'sku' => 'LAIT-001', 'barcode' => '100000000006', 'unit' => 'L', 'cost' => 0.90, 'sale' => 1.60],
-            ['name' => 'Yaourt nature', 'category' => 'Produits frais', 'sku' => 'YAO-001', 'barcode' => '100000000007', 'unit' => 'piece', 'cost' => 0.25, 'sale' => 0.60],
-            ['name' => 'Savon 200g', 'category' => 'Hygiene', 'sku' => 'SAV-001', 'barcode' => '100000000008', 'unit' => 'g', 'cost' => 0.70, 'sale' => 1.40],
-            ['name' => 'Dentifrice 75ml', 'category' => 'Hygiene', 'sku' => 'DEN-001', 'barcode' => '100000000009', 'unit' => 'ml', 'cost' => 1.20, 'sale' => 2.30],
-            ['name' => 'Chips nature 140g', 'category' => 'Snacking', 'sku' => 'CHI-001', 'barcode' => '100000000010', 'unit' => 'g', 'cost' => 0.90, 'sale' => 1.90],
-            ['name' => 'Biscuit chocolat', 'category' => 'Snacking', 'sku' => 'BIS-001', 'barcode' => '100000000011', 'unit' => 'piece', 'cost' => 0.50, 'sale' => 1.20],
-            ['name' => 'Baguette', 'category' => 'Boulangerie', 'sku' => 'BAG-001', 'barcode' => '100000000012', 'unit' => 'piece', 'cost' => 0.40, 'sale' => 0.90],
-        ];
+        $toDecimal = function (?string $value): ?float {
+            $value = trim((string) $value);
+            if ($value === '') {
+                return null;
+            }
+            $value = str_replace(',', '.', $value);
+            return (float) $value;
+        };
 
+        $toInt = function (?string $value): int {
+            $value = trim((string) $value);
+            if ($value === '') {
+                return 0;
+            }
+            $value = str_replace(',', '.', $value);
+            return (int) round((float) $value);
+        };
+
+        $categoryMap = [];
         $productModels = [];
-        foreach ($products as $index => $productData) {
-            $product = Product::firstOrCreate(
-                ['sku' => $productData['sku']],
-                [
-                    'name' => $productData['name'],
-                    'category_id' => $categoryMap[$productData['category']]->id,
-                    'barcode' => $productData['barcode'],
-                    'unit' => $productData['unit'],
-                    'cost_price' => $productData['cost'],
-                    'sale_price' => $productData['sale'],
-                    'promo_label' => $index % 4 === 0 ? 'Promo' : null,
-                    'promo_price' => $index % 4 === 0 ? round($productData['sale'] * 0.85, 2) : null,
-                    'image_url' => 'https://picsum.photos/seed/produit' . ($index + 1) . '/400/300',
-                ]
-            );
+        $seenSkus = [];
+        $seenBarcodes = [];
 
-            $productModels[] = $product;
+        if (($handle = fopen($csvPath, 'r')) !== false) {
+            $header = fgetcsv($handle, 0, ';');
+            if ($header === false) {
+                throw new \RuntimeException("CSV vide: {$csvPath}");
+            }
 
-            Stock::updateOrCreate(
-                ['product_id' => $product->id],
-                ['quantity' => $faker->numberBetween(20, 120)]
-            );
+            $header = array_map('trim', $header);
+            while (($row = fgetcsv($handle, 0, ';')) !== false) {
+                $row = array_pad($row, count($header), '');
+                $data = array_combine($header, $row);
+
+                $name = trim((string) ($data['NAME'] ?? ''));
+                if ($name === '') {
+                    continue;
+                }
+
+                $categoryRaw = trim((string) ($data['CATEGORY'] ?? ''));
+                $categoryName = $categoryRaw !== '' ? Str::title(Str::lower($categoryRaw)) : 'Divers';
+                $categoryKey = Str::lower($categoryName);
+                if (!isset($categoryMap[$categoryKey])) {
+                    $categoryMap[$categoryKey] = Category::firstOrCreate(['name' => $categoryName]);
+                }
+
+                $sku = trim((string) ($data['SKU'] ?? ''));
+                if ($sku === '' || isset($seenSkus[$sku])) {
+                    $sku = 'SKU-' . str_pad((string) (count($seenSkus) + 1), 5, '0', STR_PAD_LEFT);
+                }
+                $seenSkus[$sku] = true;
+
+                $barcode = trim((string) ($data['BARCODE'] ?? ''));
+                if ($barcode === '') {
+                    $barcode = null;
+                }
+                if ($barcode !== null && isset($seenBarcodes[$barcode])) {
+                    $barcode = null;
+                }
+                if ($barcode !== null) {
+                    $seenBarcodes[$barcode] = true;
+                }
+
+                $unit = trim((string) ($data['UNIT'] ?? ''));
+                $cost = $toDecimal($data['COST PRICE'] ?? null);
+                $sale = $toDecimal($data['SALE PRICE'] ?? null);
+                $currency = strtoupper(trim((string) ($data['CURRENCY'] ?? 'CDF')));
+                $stockQty = $toInt($data['STOCK QTITE'] ?? null);
+                $minStock = $toInt($data['MIN STOCK'] ?? null);
+                $reorderQty = $toInt($data['REORD QTE'] ?? null);
+
+                $product = Product::updateOrCreate(
+                    ['sku' => $sku],
+                    [
+                        'name' => $name,
+                        'category_id' => $categoryMap[$categoryKey]->id,
+                        'barcode' => $barcode,
+                        'unit' => $unit !== '' ? $unit : null,
+                        'cost_price' => $cost,
+                        'sale_price' => $sale,
+                        'promo_label' => null,
+                        'promo_price' => null,
+                        'image_url' => null,
+                        'currency' => $currency !== '' ? $currency : 'CDF',
+                        'min_stock' => $minStock,
+                        'reorder_qty' => $reorderQty,
+                    ]
+                );
+
+                $productModels[] = $product;
+
+                Stock::updateOrCreate(
+                    ['product_id' => $product->id],
+                    ['quantity' => $stockQty]
+                );
+            }
+
+            fclose($handle);
         }
 
         $suppliers = [
