@@ -19,6 +19,8 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        //
+        if (app()->environment('production') && config('app.debug')) {
+            throw new \RuntimeException('APP_DEBUG must be false in production.');
+        }
     }
 }
