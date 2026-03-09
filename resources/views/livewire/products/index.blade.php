@@ -71,6 +71,10 @@
                             <input type="checkbox" wire:model="importMatchByName" class="rounded border-slate-300 text-teal-600 focus:ring-teal-500" />
                             Associer par nom si SKU/Code-barres absent
                         </label>
+                        <label class="flex items-center gap-2 text-sm text-slate-600">
+                            <input type="checkbox" wire:model="importSyncExcel" class="rounded border-slate-300 text-teal-600 focus:ring-teal-500" />
+                            Synchroniser par SKU (archive les absents)
+                        </label>
                         <button type="submit" class="app-btn-primary">Importer Excel</button>
                     </form>
 

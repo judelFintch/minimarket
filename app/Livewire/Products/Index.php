@@ -66,6 +66,8 @@ class Index extends Component
 
     public bool $importMatchByName = true;
 
+    public bool $importSyncExcel = false;
+
     protected $queryString = [
         'search' => ['except' => ''],
     ];
@@ -330,6 +332,17 @@ class Index extends Component
             return;
         }
 
+        if ($this->importSyncExcel && ! isset($headerMap['sku'])) {
+            $this->importErrors[] = 'La colonne "sku" est obligatoire pour la synchronisation.';
+            $this->importExcelFile = null;
+
+            return;
+        }
+
+        $seenSkus = [];
+        $seenBarcodes = [];
+        $syncSkus = [];
+
         DB::beginTransaction();
         try {
             $lineNumber = 1;
@@ -348,10 +361,42 @@ class Index extends Component
                     continue;
                 }
 
-                $categoryId = $this->resolveCategoryId($data);
-                $product = $this->resolveImportedProduct($data, $this->importMatchByName);
+                if ($this->importSyncExcel) {
+                    if (! $data['sku']) {
+                        $this->importErrors[] = "Ligne {$lineNumber}: sku obligatoire pour la synchronisation.";
+                        $this->skippedCount++;
 
-                if (! $product && ! $this->importCreateMissing) {
+                        continue;
+                    }
+
+                    if (in_array($data['sku'], $seenSkus, true)) {
+                        $this->importErrors[] = "Ligne {$lineNumber}: sku duplique.";
+                        $this->skippedCount++;
+
+                        continue;
+                    }
+
+                    $seenSkus[] = $data['sku'];
+                    $syncSkus[] = $data['sku'];
+
+                    if ($data['barcode']) {
+                        if (in_array($data['barcode'], $seenBarcodes, true)) {
+                            $this->importErrors[] = "Ligne {$lineNumber}: code-barres duplique.";
+                            $this->skippedCount++;
+
+                            continue;
+                        }
+
+                        $seenBarcodes[] = $data['barcode'];
+                    }
+                }
+
+                $categoryId = $this->resolveCategoryId($data);
+                $product = $this->importSyncExcel
+                    ? $this->findProductBySku($data['sku'])
+                    : $this->resolveImportedProduct($data, $this->importMatchByName);
+
+                if (! $this->importSyncExcel && ! $product && ! $this->importCreateMissing) {
                     $this->importErrors[] = "Ligne {$lineNumber}: produit introuvable (sku, code-barres ou nom).";
                     $this->skippedCount++;
 
@@ -369,7 +414,15 @@ class Index extends Component
                     'currency' => $data['currency'],
                     'min_stock' => $data['min_stock'],
                     'reorder_qty' => $data['reorder_qty'],
+                    'archived_at' => null,
                 ];
+
+                if ($this->importSyncExcel && $data['barcode']) {
+                    Product::query()
+                        ->where('barcode', $data['barcode'])
+                        ->when($product, fn ($q) => $q->whereKeyNot($product->id))
+                        ->update(['barcode' => null]);
+                }
 
                 if ($product) {
                     $product->update($payload);
@@ -383,6 +436,12 @@ class Index extends Component
                 );
 
                 $this->importedCount++;
+            }
+
+            if ($this->importSyncExcel && $this->importErrors === []) {
+                Product::query()
+                    ->whereNotIn('sku', $syncSkus)
+                    ->update(['archived_at' => now()]);
             }
 
             if ($this->importErrors !== []) {
@@ -718,6 +777,15 @@ class Index extends Component
         }
 
         return null;
+    }
+
+    private function findProductBySku(?string $sku): ?Product
+    {
+        if (! $sku) {
+            return null;
+        }
+
+        return Product::query()->where('sku', $sku)->first();
     }
 
     private function normalizeIdentifier($value): ?string

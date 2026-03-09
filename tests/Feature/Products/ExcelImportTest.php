@@ -111,4 +111,51 @@ class ExcelImportTest extends TestCase
         $this->assertSame(99.0, (float) $barcodeMatch->sale_price);
         $this->assertSame(10.0, (float) $nameMatch->sale_price);
     }
+
+    public function test_excel_sync_archives_missing_products_and_updates_by_sku(): void
+    {
+        $admin = User::factory()->create([
+            'role' => 'admin',
+        ]);
+
+        $keep = Product::factory()->create([
+            'sku' => 'SKU-KEEP',
+            'barcode' => 'BAR-KEEP',
+            'sale_price' => 10,
+            'archived_at' => now(),
+        ]);
+
+        $archive = Product::factory()->create([
+            'sku' => 'SKU-ARCH',
+            'sale_price' => 20,
+        ]);
+
+        $spreadsheet = new Spreadsheet;
+        $sheet = $spreadsheet->getActiveSheet();
+        $sheet->fromArray([
+            ['name', 'sku', 'barcode', 'sale_price', 'stock_quantity', 'currency'],
+            ['Produit Keep', 'SKU-KEEP', 'BAR-NEW', 50, 8, 'CDF'],
+        ]);
+
+        $path = sys_get_temp_dir().'/products-import-sync.xlsx';
+        (new Xlsx($spreadsheet))->save($path);
+
+        $content = file_get_contents($path);
+        $file = UploadedFile::fake()->createWithContent('products-import-sync.xlsx', $content);
+
+        Livewire::actingAs($admin)
+            ->test(Index::class)
+            ->set('importExcelFile', $file)
+            ->set('importSyncExcel', true)
+            ->call('importProductsExcel')
+            ->assertSet('importedCount', 1);
+
+        $keep->refresh();
+        $archive->refresh();
+
+        $this->assertNull($keep->archived_at);
+        $this->assertSame('BAR-NEW', $keep->barcode);
+        $this->assertSame(50.0, (float) $keep->sale_price);
+        $this->assertNotNull($archive->archived_at);
+    }
 }
