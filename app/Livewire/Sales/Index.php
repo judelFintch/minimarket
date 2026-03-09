@@ -137,6 +137,7 @@ class Index extends Component
                 $this->items[$index]['unit_price'] = $price;
                 $this->items[$index]['discount_rate'] = $discountRate;
                 $this->resetSelectedItem();
+                $this->dispatch('notify', message: 'Ajoute au panier.', lastAddedId: $this->selectedProductId);
 
                 return;
             }
@@ -150,6 +151,7 @@ class Index extends Component
         ];
 
         $this->resetSelectedItem();
+        $this->dispatch('notify', message: 'Ajoute au panier.', lastAddedId: $this->selectedProductId);
     }
 
     public function incrementSelectedQuantity(): void

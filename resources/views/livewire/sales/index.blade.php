@@ -1,6 +1,6 @@
 <div
     class="space-y-8 sales-screen"
-    x-data="{ searchCount: {{ $filteredProducts->count() }}, activeIndex: 0, screenMode: @entangle('screenMode').live }"
+    x-data="{ searchCount: {{ $filteredProducts->count() }}, activeIndex: 0, screenMode: @entangle('screenMode').live, lastAddedId: null }"
     x-bind:class="`sales-screen-${screenMode}`"
     x-init="$nextTick(() => $refs.barcode?.focus())"
     x-on:keydown.window="
@@ -15,6 +15,10 @@
     "
     x-on:notify.window="
         $dispatch('toast', { message: $event.detail.message, invoiceId: $event.detail.invoiceId });
+        if ($event.detail.lastAddedId) {
+            lastAddedId = $event.detail.lastAddedId;
+            setTimeout(() => lastAddedId = null, 600);
+        }
         if ($event.detail.invoiceId) {
             if (window.__receiptWindow && !window.__receiptWindow.closed) {
                 window.__receiptWindow.location = `/invoices/${$event.detail.invoiceId}/receipt`;
@@ -138,14 +142,21 @@
                             @if ($productSearch !== '')
                                 <div class="grid gap-2 sm:grid-cols-2">
                                     @forelse ($filteredProducts as $product)
-                                        <button type="button"
-                                            id="search-item-{{ $loop->index }}"
-                                            wire:click="selectProduct({{ $product->id }})"
-                                            class="app-btn-secondary justify-between"
-                                            :class="activeIndex === {{ $loop->index }} ? 'ring-2 ring-teal-300' : ''">
-                                            <span>{{ $product->name }}</span>
-                                            <span class="text-xs text-slate-500">Stock {{ $product->stock?->quantity ?? 0 }}</span>
-                                        </button>
+                                        <div class="flex items-center justify-between gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm">
+                                            <button type="button"
+                                                id="search-item-{{ $loop->index }}"
+                                                wire:click="selectProduct({{ $product->id }})"
+                                                class="flex-1 text-left font-semibold text-slate-700"
+                                                :class="activeIndex === {{ $loop->index }} ? 'text-teal-700' : ''">
+                                                <div class="flex items-center justify-between gap-2">
+                                                    <span>{{ $product->name }}</span>
+                                                    <span class="text-xs text-slate-500">Stock {{ $product->stock?->quantity ?? 0 }}</span>
+                                                </div>
+                                            </button>
+                                            <button type="button" wire:click="selectProduct({{ $product->id }}); $wire.addToCart();" class="app-btn-secondary px-3 py-1 text-xs font-semibold">
+                                                +
+                                            </button>
+                                        </div>
                                     @empty
                                         <div class="text-sm text-slate-500">Aucun produit trouve.</div>
                                     @endforelse
@@ -250,7 +261,8 @@
                                         $lineDiscount = $lineBase * (((float) ($item['discount_rate'] ?? 0)) / 100);
                                         $lineTotal = $lineBase - $lineDiscount;
                                     @endphp
-                                    <div class="sales-line group flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-slate-200/80 bg-white p-4 shadow-sm transition">
+                                    <div class="sales-line group flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-slate-200/80 bg-white p-4 shadow-sm transition"
+                                        :class="lastAddedId === {{ $item['product_id'] ?? 0 }} ? 'ring-2 ring-emerald-300 shadow-emerald-200/50' : ''">
                                         <div class="min-w-0">
                                             <div class="flex flex-wrap items-center gap-3 text-sm font-semibold text-slate-900">
                                                 <span>{{ $product?->name ?? 'Produit' }}</span>
