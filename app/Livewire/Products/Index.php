@@ -258,7 +258,7 @@ class Index extends Component
                 }
 
                 $categoryId = $this->resolveCategoryId($data);
-                $product = $this->findExistingProduct($data);
+                $product = $this->resolveImportedProduct($data);
 
                 $payload = [
                     'category_id' => $categoryId,
@@ -349,7 +349,7 @@ class Index extends Component
                 }
 
                 $categoryId = $this->resolveCategoryId($data);
-                $product = $this->findExistingProduct($data, $this->importMatchByName);
+                $product = $this->resolveImportedProduct($data, $this->importMatchByName);
 
                 if (! $product && ! $this->importCreateMissing) {
                     $this->importErrors[] = "Ligne {$lineNumber}: produit introuvable (sku, code-barres ou nom).";
@@ -370,13 +370,6 @@ class Index extends Component
                     'min_stock' => $data['min_stock'],
                     'reorder_qty' => $data['reorder_qty'],
                 ];
-
-                if (! $this->canApplyBarcodeUpdate($data['barcode'], $product)) {
-                    $this->importErrors[] = "Ligne {$lineNumber}: code-barres deja utilise par un autre produit.";
-                    $this->skippedCount++;
-
-                    continue;
-                }
 
                 if ($product) {
                     $product->update($payload);
@@ -705,16 +698,16 @@ class Index extends Component
         return null;
     }
 
-    private function findExistingProduct(array $data, bool $matchByName = false): ?Product
+    private function resolveImportedProduct(array $data, bool $matchByName = false): ?Product
     {
-        $sku = $data['sku'] ?? null;
-        if ($sku) {
-            return Product::query()->where('sku', $sku)->first();
-        }
-
         $barcode = $data['barcode'] ?? null;
         if ($barcode) {
             return Product::query()->where('barcode', $barcode)->first();
+        }
+
+        $sku = $data['sku'] ?? null;
+        if ($sku) {
+            return Product::query()->where('sku', $sku)->first();
         }
 
         if ($matchByName) {
@@ -725,20 +718,6 @@ class Index extends Component
         }
 
         return null;
-    }
-
-    private function canApplyBarcodeUpdate(?string $barcode, ?Product $product): bool
-    {
-        if (! $barcode) {
-            return true;
-        }
-
-        $query = Product::query()->where('barcode', $barcode);
-        if ($product) {
-            $query->whereKeyNot($product->id);
-        }
-
-        return ! $query->exists();
     }
 
     private function normalizeIdentifier($value): ?string
