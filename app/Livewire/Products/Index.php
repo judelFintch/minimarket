@@ -6,12 +6,15 @@ use App\Models\Category;
 use App\Models\Product;
 use App\Models\Stock;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Livewire\Component;
 use Livewire\WithFileUploads;
 use Livewire\WithPagination;
+use Maatwebsite\Excel\Concerns\ToArray;
+use Maatwebsite\Excel\Facades\Excel;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class Index extends Component
@@ -20,24 +23,46 @@ class Index extends Component
     use WithPagination;
 
     public ?int $productId = null;
+
     public ?int $categoryId = null;
+
     public string $name = '';
+
     public ?string $sku = null;
+
     public ?string $barcode = null;
+
     public ?string $unit = null;
+
     public ?float $cost_price = null;
+
     public ?float $sale_price = null;
+
     public string $currency = 'CDF';
+
     public int $stock_quantity = 0;
+
     public int $min_stock = 0;
+
     public int $reorder_qty = 0;
+
     public string $search = '';
+
     public string $deleteError = '';
+
     public bool $showArchived = false;
+
     public $importFile;
+
+    public $importExcelFile;
+
     public array $importErrors = [];
+
     public int $importedCount = 0;
+
     public int $skippedCount = 0;
+
+    public bool $importCreateMissing = false;
 
     protected $queryString = [
         'search' => ['except' => ''],
@@ -183,12 +208,14 @@ class Index extends Component
         $path = $this->importFile?->getRealPath();
         if (! $path || ! is_readable($path)) {
             $this->importErrors[] = 'Fichier CSV inaccessible.';
+
             return;
         }
 
         $handle = fopen($path, 'r');
         if ($handle === false) {
             $this->importErrors[] = 'Impossible de lire le fichier CSV.';
+
             return;
         }
 
@@ -196,6 +223,7 @@ class Index extends Component
         if ($headerLine === false) {
             $this->importErrors[] = 'Fichier CSV vide.';
             fclose($handle);
+
             return;
         }
 
@@ -205,6 +233,7 @@ class Index extends Component
         if (! isset($headerMap['name'])) {
             $this->importErrors[] = 'La colonne "name" est obligatoire.';
             fclose($handle);
+
             return;
         }
 
@@ -222,6 +251,7 @@ class Index extends Component
                 if ($errors !== []) {
                     $this->importErrors = array_merge($this->importErrors, $errors);
                     $this->skippedCount++;
+
                     continue;
                 }
 
@@ -269,6 +299,103 @@ class Index extends Component
         } finally {
             fclose($handle);
             $this->importFile = null;
+        }
+    }
+
+    public function importProductsExcel(): void
+    {
+        $this->authorizeAdminAccess();
+        $this->resetImportState();
+
+        $this->validate([
+            'importExcelFile' => ['required', 'file', 'mimes:xls,xlsx', 'max:20480'],
+        ]);
+
+        $rows = $this->loadExcelRows();
+        if ($rows->isEmpty()) {
+            $this->importErrors[] = 'Fichier Excel vide.';
+            $this->importExcelFile = null;
+
+            return;
+        }
+
+        $headers = $rows->shift() ?? [];
+        $headerMap = $this->buildHeaderMap($headers);
+        if (! isset($headerMap['name'])) {
+            $this->importErrors[] = 'La colonne "name" est obligatoire.';
+            $this->importExcelFile = null;
+
+            return;
+        }
+
+        DB::beginTransaction();
+        try {
+            $lineNumber = 1;
+            foreach ($rows as $row) {
+                $lineNumber++;
+                if ($this->rowIsEmpty($row)) {
+                    continue;
+                }
+
+                $rawData = $this->mapRow($row, $headerMap);
+                [$errors, $data] = $this->sanitizeImportRow($rawData, $lineNumber);
+                if ($errors !== []) {
+                    $this->importErrors = array_merge($this->importErrors, $errors);
+                    $this->skippedCount++;
+
+                    continue;
+                }
+
+                $categoryId = $this->resolveCategoryId($data);
+                $product = $this->findExistingProduct($data);
+
+                if (! $product && ! $this->importCreateMissing) {
+                    $this->importErrors[] = "Ligne {$lineNumber}: produit introuvable (SKU ou code-barres requis).";
+                    $this->skippedCount++;
+
+                    continue;
+                }
+
+                $payload = [
+                    'category_id' => $categoryId,
+                    'name' => $data['name'],
+                    'sku' => $data['sku'],
+                    'barcode' => $data['barcode'],
+                    'unit' => $data['unit'],
+                    'cost_price' => $data['cost_price'],
+                    'sale_price' => $data['sale_price'],
+                    'currency' => $data['currency'],
+                    'min_stock' => $data['min_stock'],
+                    'reorder_qty' => $data['reorder_qty'],
+                ];
+
+                if ($product) {
+                    $product->update($payload);
+                } else {
+                    $product = Product::query()->create($payload);
+                }
+
+                Stock::updateOrCreate(
+                    ['product_id' => $product->id],
+                    ['quantity' => $data['stock_quantity']]
+                );
+
+                $this->importedCount++;
+            }
+
+            if ($this->importErrors !== []) {
+                DB::rollBack();
+                $this->importedCount = 0;
+                $this->importErrors[] = 'Import annule: des erreurs ont ete detectees.';
+            } else {
+                DB::commit();
+            }
+        } catch (\Throwable $exception) {
+            DB::rollBack();
+            $this->importErrors[] = 'Import annule: une erreur est survenue.';
+            report($exception);
+        } finally {
+            $this->importExcelFile = null;
         }
     }
 
@@ -343,9 +470,9 @@ class Index extends Component
             ->whereNull('archived_at')
             ->when($this->search !== '', function ($query) {
                 $query->where(function ($subQuery) {
-                    $subQuery->where('name', 'like', '%' . $this->search . '%')
-                        ->orWhere('sku', 'like', '%' . $this->search . '%')
-                        ->orWhere('barcode', 'like', '%' . $this->search . '%');
+                    $subQuery->where('name', 'like', '%'.$this->search.'%')
+                        ->orWhere('sku', 'like', '%'.$this->search.'%')
+                        ->orWhere('barcode', 'like', '%'.$this->search.'%');
                 });
             })
             ->orderBy('name')
@@ -358,9 +485,9 @@ class Index extends Component
                 ->whereNotNull('archived_at')
                 ->when($this->search !== '', function ($query) {
                     $query->where(function ($subQuery) {
-                        $subQuery->where('name', 'like', '%' . $this->search . '%')
-                            ->orWhere('sku', 'like', '%' . $this->search . '%')
-                            ->orWhere('barcode', 'like', '%' . $this->search . '%');
+                        $subQuery->where('name', 'like', '%'.$this->search.'%')
+                            ->orWhere('sku', 'like', '%'.$this->search.'%')
+                            ->orWhere('barcode', 'like', '%'.$this->search.'%');
                     });
                 })
                 ->orderBy('name')
@@ -382,6 +509,12 @@ class Index extends Component
     {
         $user = auth()->user();
         abort_unless($user && $user->role !== 'vendeur_simple', 403);
+    }
+
+    private function authorizeAdminAccess(): void
+    {
+        $user = auth()->user();
+        abort_unless($user && $user->isAdmin(), 403);
     }
 
     private function resetImportState(): void
@@ -415,6 +548,7 @@ class Index extends Component
         arsort($candidates);
 
         $delimiter = array_key_first($candidates);
+
         return $delimiter ?? ',';
     }
 
@@ -522,12 +656,14 @@ class Index extends Component
         $normalized = str_replace([' ', ','], ['', '.'], $value);
         if (! is_numeric($normalized)) {
             $errors[] = "Ligne {$lineNumber}: valeur invalide pour {$label}.";
+
             return null;
         }
 
         $number = (float) $normalized;
         if ($number < 0) {
             $errors[] = "Ligne {$lineNumber}: valeur negative pour {$label}.";
+
             return null;
         }
 
@@ -573,5 +709,26 @@ class Index extends Component
         }
 
         return null;
+    }
+
+    private function loadExcelRows(): Collection
+    {
+        $sheets = Excel::toArray(new class implements ToArray
+        {
+            public function array(array $array): array
+            {
+                return $array;
+            }
+        }, $this->importExcelFile);
+
+        $rows = collect($sheets[0] ?? []);
+
+        return $rows->map(function ($row) {
+            return array_map(function ($value) {
+                $value = is_string($value) ? trim($value) : $value;
+
+                return $value === '' ? null : $value;
+            }, is_array($row) ? $row : []);
+        });
     }
 }

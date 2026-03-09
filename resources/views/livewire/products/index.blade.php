@@ -47,6 +47,48 @@
             </div>
         </div>
 
+        @if (auth()->user()?->isAdmin())
+            <div class="app-card">
+                <div class="app-card-header">
+                    <div>
+                        <h3 class="app-card-title">Import Excel</h3>
+                        <p class="app-card-subtitle">Mise a jour securisee via fichier XLS/XLSX.</p>
+                    </div>
+                </div>
+
+                <div class="app-card-body space-y-4">
+                    <form wire:submit.prevent="importProductsExcel" class="flex flex-col gap-3 sm:flex-row sm:items-end">
+                        <div class="flex-1">
+                            <label class="app-label">Importer un Excel</label>
+                            <input type="file" wire:model="importExcelFile" accept=".xls,.xlsx,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" class="app-input" />
+                            @error('importExcelFile') <p class="mt-1 text-xs text-red-600">{{ $message }}</p> @enderror
+                        </div>
+                        <label class="flex items-center gap-2 text-sm text-slate-600">
+                            <input type="checkbox" wire:model="importCreateMissing" class="rounded border-slate-300 text-teal-600 focus:ring-teal-500" />
+                            Creer les produits manquants
+                        </label>
+                        <button type="submit" class="app-btn-primary">Importer Excel</button>
+                    </form>
+
+                    @if ($importedCount > 0 || $skippedCount > 0)
+                        <div class="rounded-lg border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700">
+                            Import termine: {{ $importedCount }} lignes importees, {{ $skippedCount }} ignorees.
+                        </div>
+                    @endif
+
+                    @if ($importErrors !== [])
+                        <div class="rounded-lg border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
+                            <ul class="space-y-1">
+                                @foreach ($importErrors as $error)
+                                    <li>{{ $error }}</li>
+                                @endforeach
+                            </ul>
+                        </div>
+                    @endif
+                </div>
+            </div>
+        @endif
+
         <div class="app-card">
             <div class="app-card-header">
                 <h3 class="app-card-title">
