@@ -139,24 +139,37 @@
                                     x-on:keydown.enter.prevent
                                     x-on:keydown.down.prevent="if (searchCount > 0) { activeIndex = Math.min(activeIndex + 1, searchCount - 1); }"
                                     x-on:keydown.up.prevent="if (searchCount > 0) { activeIndex = Math.max(activeIndex - 1, 0); }"
-                                    x-on:keydown.enter.prevent="if (searchCount > 0) { document.getElementById('search-item-' + activeIndex)?.click(); }"
+                                    x-on:keydown.enter.prevent="if (searchCount > 0) { document.getElementById('search-add-' + activeIndex)?.click(); }"
                                 />
                             </div>
                             @if ($productSearch !== '')
                                 <div class="grid gap-2 sm:grid-cols-2">
                                     @forelse ($filteredProducts as $product)
-                                        <div class="flex items-center justify-between gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm">
+                                        @php
+                                            $displayPrice = $product->promo_price ?? $product->sale_price;
+                                            $displayCurrency = $product->currency ?? 'CDF';
+                                        @endphp
+                                        <div class="flex items-center justify-between gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm"
+                                            :class="activeIndex === {{ $loop->index }} ? 'ring-2 ring-teal-200' : ''">
                                             <button type="button"
                                                 id="search-item-{{ $loop->index }}"
                                                 wire:click="selectProduct({{ $product->id }})"
                                                 class="flex-1 text-left font-semibold text-slate-700"
                                                 :class="activeIndex === {{ $loop->index }} ? 'text-teal-700' : ''">
                                                 <div class="flex items-center justify-between gap-2">
-                                                    <span>{{ $product->name }}</span>
-                                                    <span class="text-xs text-slate-500">Stock {{ $product->stock?->quantity ?? 0 }}</span>
+                                                    <div class="min-w-0">
+                                                        <div class="truncate">{{ $product->name }}</div>
+                                                        <div class="mt-0.5 text-[11px] text-slate-500">
+                                                            {{ number_format((float) $displayPrice, 2) }} {{ $displayCurrency }}
+                                                            · Stock {{ $product->stock?->quantity ?? 0 }}
+                                                        </div>
+                                                    </div>
                                                 </div>
                                             </button>
-                                            <button type="button" wire:click="selectProduct({{ $product->id }}); $wire.addToCart();" class="app-btn-secondary px-3 py-1 text-xs font-semibold">
+                                            <button type="button"
+                                                id="search-add-{{ $loop->index }}"
+                                                wire:click="selectProduct({{ $product->id }}); $wire.addToCart();"
+                                                class="app-btn-secondary px-3 py-1 text-xs font-semibold">
                                                 +
                                             </button>
                                         </div>
