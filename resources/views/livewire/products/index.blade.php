@@ -256,28 +256,47 @@
                         <tr>
                             <th>Produit</th>
                             <th>Categorie</th>
+                            <th>Code-barres</th>
                             <th>SKU</th>
+                            <th>Unite</th>
                             <th>Stock</th>
                             <th>Seuil</th>
                             <th>Reappro</th>
+                            <th>Prix achat</th>
                             <th>Prix vente</th>
                             <th>Devise</th>
+                            <th>MAJ</th>
                             <th class="text-right">Actions</th>
                         </tr>
                     </thead>
                     <tbody class="bg-white">
                         @forelse ($products as $product)
+                            @php
+                                $stockQty = $product->stock?->quantity ?? 0;
+                                $minStock = $product->min_stock ?? 0;
+                                $status = $stockQty <= $minStock ? 'alert' : ($stockQty <= ($minStock + 5) ? 'warn' : 'ok');
+                            @endphp
                             <tr>
                                 <td class="font-semibold text-slate-900">{{ $product->name }}</td>
                                 <td>{{ $product->category?->name ?? '—' }}</td>
+                                <td>{{ $product->barcode ?? '—' }}</td>
                                 <td>{{ $product->sku ?? '—' }}</td>
-                                <td>{{ $product->stock?->quantity ?? 0 }}</td>
+                                <td>{{ $product->unit ?? '—' }}</td>
+                                <td>
+                                    <span class="app-badge {{ $status === 'alert' ? 'bg-rose-100 text-rose-700' : ($status === 'warn' ? 'bg-amber-100 text-amber-700' : 'bg-emerald-100 text-emerald-700') }}">
+                                        {{ $stockQty }}
+                                    </span>
+                                </td>
                                 <td>{{ $product->min_stock ?? 0 }}</td>
                                 <td>{{ $product->reorder_qty ?? 0 }}</td>
+                                <td>
+                                    {{ $product->cost_price !== null ? number_format($product->cost_price, 2) : '—' }}
+                                </td>
                                 <td>
                                     {{ $product->sale_price !== null ? number_format($product->sale_price, 2) : '—' }}
                                 </td>
                                 <td>{{ $product->currency ?? 'CDF' }}</td>
+                                <td>{{ $product->updated_at?->format('Y-m-d') ?? '—' }}</td>
                                 <td class="text-right">
                                     <button type="button" wire:click="editProduct({{ $product->id }})" class="app-btn-ghost text-teal-600 hover:text-teal-700">Modifier</button>
                                     <button type="button" onclick="return confirm('Archiver ce produit ?') || event.stopImmediatePropagation()" wire:click="deleteProduct({{ $product->id }})" class="app-btn-ghost text-rose-600 hover:text-rose-700">Archiver</button>
@@ -285,7 +304,7 @@
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="9" class="px-4 py-6 text-center text-sm text-slate-500">Aucun produit trouve.</td>
+                                <td colspan="13" class="px-4 py-6 text-center text-sm text-slate-500">Aucun produit trouve.</td>
                             </tr>
                         @endforelse
                     </tbody>
