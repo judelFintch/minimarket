@@ -392,29 +392,6 @@
                     </div>
                 </div>
 
-                @if ($pendingSales->isNotEmpty())
-                    <div class="app-card sales-card">
-                        <div class="app-card-header">
-                            <div>
-                                <h3 class="app-card-title">Ventes en attente</h3>
-                                <p class="app-card-subtitle">Reprendre rapidement.</p>
-                            </div>
-                        </div>
-                        <div class="app-card-body space-y-2 text-sm">
-                            @foreach ($pendingSales as $sale)
-                                <div class="flex items-center justify-between gap-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3">
-                                    <div>
-                                        <div class="font-semibold text-slate-800">{{ $sale->reference }}</div>
-                                        <div class="text-xs text-slate-500">{{ $sale->items_count }} articles · {{ number_format($sale->total_amount, 2) }}</div>
-                                    </div>
-                                    <button type="button" wire:click="loadPendingSale({{ $sale->id }})" class="app-btn-secondary">
-                                        Reprendre
-                                    </button>
-                                </div>
-                            @endforeach
-                        </div>
-                    </div>
-                @endif
             </div>
 
             <div class="sales-mobile-bar lg:hidden">
