@@ -43,7 +43,7 @@ class Index extends Component
 
     public ?int $selectedProductId = null;
 
-    public int $selectedQuantity = 1;
+    public float $selectedQuantity = 1;
 
     public float $selectedDiscountRate = 0;
 
@@ -56,7 +56,7 @@ class Index extends Component
             'sold_at' => ['nullable', 'date'],
             'items' => ['required', 'array', 'min:1'],
             'items.*.product_id' => ['required', 'exists:products,id'],
-            'items.*.quantity' => ['required', 'integer', 'min:1'],
+            'items.*.quantity' => ['required', 'numeric', 'min:0.01'],
             'items.*.unit_price' => ['required', 'numeric', 'min:0'],
             'items.*.discount_rate' => ['nullable', 'numeric', 'min:0', 'max:100'],
             'discountRate' => ['nullable', 'numeric', 'min:0', 'max:100'],
@@ -107,7 +107,8 @@ class Index extends Component
     public function selectProduct(int $productId): void
     {
         $this->selectedProductId = $productId;
-        $this->selectedQuantity = max(1, (int) $this->selectedQuantity);
+        $step = $this->quantityStepForProduct($productId);
+        $this->selectedQuantity = max($step, round((float) $this->selectedQuantity, 2));
         $this->selectedDiscountRate = (float) $this->selectedDiscountRate;
         $this->selectedUnitPrice = Product::query()
             ->whereKey($productId)
@@ -124,7 +125,8 @@ class Index extends Component
             ]);
         }
 
-        $quantity = max(1, (int) $this->selectedQuantity);
+        $step = $this->quantityStepForProduct((int) $this->selectedProductId);
+        $quantity = max($step, round((float) $this->selectedQuantity, 2));
         $discountRate = max(0, min(100, (float) $this->selectedDiscountRate));
         $price = Product::query()
             ->whereKey($this->selectedProductId)
@@ -133,7 +135,7 @@ class Index extends Component
 
         foreach ($this->items as $index => $item) {
             if ((int) ($item['product_id'] ?? 0) === (int) $this->selectedProductId) {
-                $this->items[$index]['quantity'] = ((int) ($item['quantity'] ?? 0)) + $quantity;
+                $this->items[$index]['quantity'] = round(((float) ($item['quantity'] ?? 0)) + $quantity, 2);
                 $this->items[$index]['unit_price'] = $price;
                 $this->items[$index]['discount_rate'] = $discountRate;
                 $this->resetSelectedItem();
@@ -156,12 +158,14 @@ class Index extends Component
 
     public function incrementSelectedQuantity(): void
     {
-        $this->selectedQuantity = max(1, (int) $this->selectedQuantity) + 1;
+        $step = $this->quantityStepForProduct((int) $this->selectedProductId);
+        $this->selectedQuantity = round(max($step, (float) $this->selectedQuantity) + $step, 2);
     }
 
     public function decrementSelectedQuantity(): void
     {
-        $this->selectedQuantity = max(1, (int) $this->selectedQuantity - 1);
+        $step = $this->quantityStepForProduct((int) $this->selectedProductId);
+        $this->selectedQuantity = round(max($step, (float) $this->selectedQuantity - $step), 2);
     }
 
     public function resetSelectedItemForm(): void
@@ -199,7 +203,8 @@ class Index extends Component
 
         if ($productId) {
             if ((int) $this->selectedProductId === (int) $productId) {
-                $this->selectedQuantity = max(1, (int) $this->selectedQuantity) + 1;
+                $step = $this->quantityStepForProduct((int) $productId);
+                $this->selectedQuantity = round(max($step, (float) $this->selectedQuantity) + $step, 2);
             } else {
                 $this->selectProduct((int) $productId);
             }
@@ -252,7 +257,8 @@ class Index extends Component
             return;
         }
 
-        $this->items[$index]['quantity'] = ((int) ($this->items[$index]['quantity'] ?? 0)) + 1;
+        $step = $this->quantityStepForItem($index);
+        $this->items[$index]['quantity'] = round(((float) ($this->items[$index]['quantity'] ?? 0)) + $step, 2);
         $this->dispatch('focus-barcode');
     }
 
@@ -262,8 +268,9 @@ class Index extends Component
             return;
         }
 
-        $current = (int) ($this->items[$index]['quantity'] ?? 1);
-        $this->items[$index]['quantity'] = max(1, $current - 1);
+        $step = $this->quantityStepForItem($index);
+        $current = (float) ($this->items[$index]['quantity'] ?? $step);
+        $this->items[$index]['quantity'] = round(max($step, $current - $step), 2);
         $this->dispatch('focus-barcode');
     }
 
@@ -277,6 +284,24 @@ class Index extends Component
         $this->sold_at = now()->format('Y-m-d');
         $this->items = [];
         $this->resetSelectedItem();
+    }
+
+    private function quantityStepForItem(int $index): float
+    {
+        $productId = (int) ($this->items[$index]['product_id'] ?? 0);
+
+        return $this->quantityStepForProduct($productId);
+    }
+
+    private function quantityStepForProduct(int $productId): float
+    {
+        if ($productId <= 0) {
+            return 1.0;
+        }
+
+        $unit = Product::query()->whereKey($productId)->value('unit');
+
+        return in_array($unit, ['kg', 'g', 'litre', 'ml'], true) ? 0.01 : 1.0;
     }
 
     private function normalizeItemsWithPrices(array $items): array
@@ -304,7 +329,7 @@ class Index extends Component
     {
         $subtotal = 0;
         foreach ($items as $item) {
-            $quantity = (int) ($item['quantity'] ?? 0);
+            $quantity = (float) ($item['quantity'] ?? 0);
             $price = (float) ($item['unit_price'] ?? 0);
             $lineBase = $quantity * $price;
             $lineDiscountRate = (float) ($item['discount_rate'] ?? 0);
@@ -480,7 +505,7 @@ class Index extends Component
         $this->items = $sale->items->map(function ($item) {
             return [
                 'product_id' => $item->product_id,
-                'quantity' => (int) $item->quantity,
+                'quantity' => (float) $item->quantity,
                 'unit_price' => (float) $item->unit_price,
                 'discount_rate' => (float) ($item->discount_rate ?? 0),
             ];

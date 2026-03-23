@@ -37,7 +37,7 @@
 
                 <div>
                     <label class="app-label">Quantite</label>
-                    <input type="number" wire:model.live="quantity" class="app-input" />
+                    <input type="number" step="0.01" wire:model.live="quantity" class="app-input" />
                     @error('quantity') <p class="mt-1 text-xs text-red-600">{{ $message }}</p> @enderror
                 </div>
 
@@ -98,7 +98,7 @@
                                         Ajustement
                                     @endif
                                 </td>
-                                <td>{{ $movement->quantity }}</td>
+                                <td>{{ number_format((float) $movement->quantity, 2) }}</td>
                                 <td>{{ $movement->reason ?? '—' }}</td>
                                 <td>
                                     {{ $movement->occurred_at?->format('Y-m-d') ?? '—' }}

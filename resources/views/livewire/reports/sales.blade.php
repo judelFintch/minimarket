@@ -162,7 +162,7 @@
                                 <td class="font-semibold text-slate-900">{{ $item->sale?->reference ?? '—' }}</td>
                                 <td>{{ $item->product?->name ?? '—' }}</td>
                                 <td>{{ $item->sale?->customer_name ?? 'Comptoir' }}</td>
-                                <td>{{ number_format((float) $item->quantity) }}</td>
+                                <td>{{ number_format((float) $item->quantity, 2) }}</td>
                                 <td>{{ number_format((float) $item->unit_price, 2) }} {{ $currency }}</td>
                                 <td>
                                     @if ($item->product?->cost_price !== null)

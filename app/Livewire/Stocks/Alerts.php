@@ -17,11 +17,17 @@ class Alerts extends Component
     use WithPagination;
 
     public ?int $categoryId = null;
+
     public ?int $supplierId = null;
+
     public ?string $currency = null;
+
     public string $search = '';
+
     public array $selected = [];
+
     public int $windowDays = 30;
+
     public int $coverageDays = 14;
 
     public function updatingSearch(): void
@@ -57,6 +63,7 @@ class Alerts extends Component
 
         if (empty($selectedIds)) {
             $this->addError('selected', 'Selectionnez au moins un produit.');
+
             return;
         }
 
@@ -75,10 +82,10 @@ class Alerts extends Component
                 continue;
             }
 
-            $currentStock = (int) ($product->stock?->quantity ?? 0);
-            $minStock = (int) ($product->min_stock ?? 0);
-            $reorderQty = (int) ($product->reorder_qty ?? 0);
-            $totalQty = (int) ($salesByProduct[$productId] ?? 0);
+            $currentStock = (float) ($product->stock?->quantity ?? 0);
+            $minStock = (float) ($product->min_stock ?? 0);
+            $reorderQty = (float) ($product->reorder_qty ?? 0);
+            $totalQty = (float) ($salesByProduct[$productId] ?? 0);
 
             $suggestedQty = $this->calculateSuggestedQty($currentStock, $minStock, $reorderQty, $totalQty);
             if ($suggestedQty <= 0) {
@@ -94,6 +101,7 @@ class Alerts extends Component
 
         if (empty($items)) {
             $this->addError('selected', 'Aucune quantite suggeree pour les produits selectionnes.');
+
             return;
         }
 
@@ -117,10 +125,10 @@ class Alerts extends Component
 
         $suggested = [];
         foreach ($products as $product) {
-            $currentStock = (int) ($product->stock?->quantity ?? 0);
-            $minStock = (int) ($product->min_stock ?? 0);
-            $reorderQty = (int) ($product->reorder_qty ?? 0);
-            $totalQty = (int) ($salesByProduct[$product->id] ?? 0);
+            $currentStock = (float) ($product->stock?->quantity ?? 0);
+            $minStock = (float) ($product->min_stock ?? 0);
+            $reorderQty = (float) ($product->reorder_qty ?? 0);
+            $totalQty = (float) ($salesByProduct[$product->id] ?? 0);
 
             $suggested[$product->id] = $this->calculateSuggestedQty($currentStock, $minStock, $reorderQty, $totalQty);
         }
@@ -146,9 +154,9 @@ class Alerts extends Component
             ->whereRaw('COALESCE(stocks.quantity, 0) <= products.min_stock')
             ->when($this->search !== '', function ($query) {
                 $query->where(function ($subQuery) {
-                    $subQuery->where('products.name', 'like', '%' . $this->search . '%')
-                        ->orWhere('products.sku', 'like', '%' . $this->search . '%')
-                        ->orWhere('products.barcode', 'like', '%' . $this->search . '%');
+                    $subQuery->where('products.name', 'like', '%'.$this->search.'%')
+                        ->orWhere('products.sku', 'like', '%'.$this->search.'%')
+                        ->orWhere('products.barcode', 'like', '%'.$this->search.'%');
                 });
             })
             ->when($this->categoryId, fn ($query) => $query->where('products.category_id', $this->categoryId))
@@ -179,25 +187,25 @@ class Alerts extends Component
             ->whereIn('sale_items.product_id', $productIds)
             ->groupBy('sale_items.product_id')
             ->pluck('total_qty', 'product_id')
-            ->map(fn ($value) => (int) $value)
+            ->map(fn ($value) => (float) $value)
             ->toArray();
     }
 
-    private function calculateSuggestedQty(int $currentStock, int $minStock, int $reorderQty, int $recentSalesQty): int
+    private function calculateSuggestedQty(float $currentStock, float $minStock, float $reorderQty, float $recentSalesQty): float
     {
         if ($reorderQty > 0) {
-            return $reorderQty;
+            return round($reorderQty, 2);
         }
 
         $avgDaily = $recentSalesQty / max(1, $this->windowDays);
-        $targetStock = (int) ceil($avgDaily * $this->coverageDays);
+        $targetStock = ceil($avgDaily * $this->coverageDays * 100) / 100;
         $needed = max(0, $targetStock - $currentStock);
 
         if ($needed === 0) {
             $needed = max(0, $minStock - $currentStock);
         }
 
-        return $needed;
+        return round($needed, 2);
     }
 
     private function authorizeAccess(): void

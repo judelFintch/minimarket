@@ -2,8 +2,8 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class SaleItem extends Model
@@ -21,6 +21,7 @@ class SaleItem extends Model
     ];
 
     protected $casts = [
+        'quantity' => 'decimal:2',
         'unit_price' => 'decimal:2',
         'discount_rate' => 'decimal:2',
         'discount_amount' => 'decimal:2',

@@ -50,7 +50,7 @@
                                 <select wire:model.live="items.{{ $index }}.product_id" class="app-select">
                                     <option value="">Selectionner</option>
                                     @foreach ($products as $product)
-                                        <option value="{{ $product->id }}">{{ $product->name }}</option>
+                                        <option value="{{ $product->id }}">{{ $product->name }} ({{ $product->unit ?? 'piece' }})</option>
                                     @endforeach
                                 </select>
                                 @error("items.$index.product_id") <p class="mt-1 text-xs text-red-600">{{ $message }}</p> @enderror
@@ -58,7 +58,7 @@
 
                             <div class="lg:col-span-2">
                                 <label class="app-label">Quantite</label>
-                                <input type="number" min="1" wire:model.live="items.{{ $index }}.quantity" class="app-input" />
+                                <input type="number" min="0.01" step="0.01" wire:model.live="items.{{ $index }}.quantity" class="app-input" />
                                 @error("items.$index.quantity") <p class="mt-1 text-xs text-red-600">{{ $message }}</p> @enderror
                             </div>
 
@@ -72,7 +72,7 @@
                                 <div class="text-right">
                                     <div class="text-xs uppercase tracking-wide text-slate-400">Total</div>
                                     <div class="text-sm font-semibold text-slate-900">
-                                        {{ number_format(((int) ($item['quantity'] ?? 0)) * ((float) ($item['unit_cost'] ?? 0)), 2) }}
+                                        {{ number_format(((float) ($item['quantity'] ?? 0)) * ((float) ($item['unit_cost'] ?? 0)), 2) }}
                                     </div>
                                 </div>
                                 <button type="button" wire:click="removeItem({{ $index }})" class="text-xs font-semibold text-rose-600 hover:text-rose-700">

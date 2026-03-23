@@ -2,8 +2,8 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class Stock extends Model
@@ -13,6 +13,10 @@ class Stock extends Model
     protected $fillable = [
         'product_id',
         'quantity',
+    ];
+
+    protected $casts = [
+        'quantity' => 'decimal:2',
     ];
 
     public function product(): BelongsTo

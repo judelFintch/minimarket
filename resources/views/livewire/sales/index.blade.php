@@ -171,7 +171,7 @@
                                                         <div class="truncate">{{ $product->name }}</div>
                                                         <div class="mt-0.5 text-[11px] text-slate-500">
                                                             {{ number_format((float) $displayPrice, 2) }} {{ $displayCurrency }}
-                                                            · Stock {{ $product->stock?->quantity ?? 0 }}
+                                                            · Stock {{ number_format((float) ($product->stock?->quantity ?? 0), 2) }} {{ $product->unit ?? 'piece' }}
                                                         </div>
                                                     </div>
                                                 </div>
@@ -209,7 +209,7 @@
                                         <option value="">Selectionner</option>
                                         @foreach ($products as $product)
                                             <option value="{{ $product->id }}">
-                                                {{ $product->name }} · Stock {{ $product->stock?->quantity ?? 0 }}
+                                                {{ $product->name }} · Stock {{ number_format((float) ($product->stock?->quantity ?? 0), 2) }} {{ $product->unit ?? 'piece' }}
                                             </option>
                                         @endforeach
                                     </select>
@@ -221,10 +221,13 @@
                                     <button type="button" wire:click="decrementSelectedQuantity" class="h-9 w-9 rounded-xl border border-slate-200 bg-white text-lg font-semibold text-slate-600 hover:bg-slate-50">
                                         -
                                     </button>
-                                    <input type="number" min="1" wire:model.live="selectedQuantity" class="app-input" x-on:keydown.enter.prevent="$wire.addToCart()" />
+                                    <input type="number" min="0.01" step="{{ $selectedProductId && in_array($productsById->get($selectedProductId)?->unit, ['kg', 'g', 'litre', 'ml'], true) ? '0.01' : '1' }}" wire:model.live="selectedQuantity" class="app-input" x-on:keydown.enter.prevent="$wire.addToCart()" />
                                     <button type="button" wire:click="incrementSelectedQuantity" class="h-9 w-9 rounded-xl border border-slate-200 bg-white text-lg font-semibold text-slate-600 hover:bg-slate-50">
                                         +
                                     </button>
+                                </div>
+                                <div class="mt-1 text-xs text-slate-500">
+                                    Unite: {{ $selectedProductId ? ($productsById->get($selectedProductId)?->unitLabel() ?? 'Piece') : 'Piece' }}
                                 </div>
                             </div>
 
@@ -303,7 +306,7 @@
                                 @foreach ($items as $index => $item)
                                     @php
                                         $product = $productsById->get($item['product_id']);
-                                        $lineBase = ((int) ($item['quantity'] ?? 0)) * ((float) ($item['unit_price'] ?? 0));
+                                        $lineBase = ((float) ($item['quantity'] ?? 0)) * ((float) ($item['unit_price'] ?? 0));
                                         $lineDiscount = $lineBase * (((float) ($item['discount_rate'] ?? 0)) / 100);
                                         $lineTotal = $lineBase - $lineDiscount;
                                     @endphp
@@ -317,6 +320,8 @@
                                                 </span>
                                             </div>
                                             <div class="mt-1 hidden text-xs text-slate-500 group-hover:block">
+                                                Qte {{ number_format((float) ($item['quantity'] ?? 0), 2) }} {{ $product?->unit ?? 'piece' }}
+                                                ·
                                                 PU {{ number_format((float) ($item['unit_price'] ?? 0), 2) }} {{ $product?->currency ?? 'CDF' }}
                                                 · Remise {{ number_format((float) ($item['discount_rate'] ?? 0), 2) }}%
                                             </div>
@@ -326,7 +331,7 @@
                                             <button type="button" wire:click="decrementQuantity({{ $index }})" class="h-9 w-9 rounded-xl border border-slate-200 bg-white text-lg font-semibold text-slate-600 hover:bg-slate-50">
                                                 -
                                             </button>
-                                            <input type="number" min="1" wire:model.live="items.{{ $index }}.quantity" class="app-input w-20" />
+                                            <input type="number" min="0.01" step="{{ in_array($product?->unit, ['kg', 'g', 'litre', 'ml'], true) ? '0.01' : '1' }}" wire:model.live="items.{{ $index }}.quantity" class="app-input w-20" />
                                             <button type="button" wire:click="incrementQuantity({{ $index }})" class="h-9 w-9 rounded-xl border border-slate-200 bg-white text-lg font-semibold text-slate-600 hover:bg-slate-50">
                                                 +
                                             </button>

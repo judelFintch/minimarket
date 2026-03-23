@@ -31,6 +31,14 @@ class ProductsFormBindingTest extends TestCase
             ->assertSeeHtml('wire:model="reorder_qty"')
             ->assertSeeHtml('wire:model="showArchived"')
             ->assertSeeHtml('wire:model.debounce.300ms="search"')
-            ->assertDontSeeHtml('wire:model.live=');
+            ->assertDontSeeHtml('wire:model.live="name"')
+            ->assertDontSeeHtml('wire:model.live="categoryId"')
+            ->assertDontSeeHtml('wire:model.live="unit"')
+            ->assertDontSeeHtml('wire:model.live="sku"')
+            ->assertDontSeeHtml('wire:model.live="barcode"')
+            ->assertDontSeeHtml('wire:model.live="cost_price"')
+            ->assertDontSeeHtml('wire:model.live="sale_price"')
+            ->assertDontSeeHtml('wire:model.live="currency"')
+            ->assertDontSeeHtml('wire:model.live="stock_quantity"');
     }
 }

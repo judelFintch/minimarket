@@ -129,7 +129,11 @@
 
                 <div>
                     <label class="app-label">Unite</label>
-                    <input type="text" wire:model="unit" placeholder="piece, kg, litre" class="app-input" />
+                    <select wire:model="unit" class="app-select">
+                        @foreach ($unitOptions as $value => $label)
+                            <option value="{{ $value }}">{{ $label }}</option>
+                        @endforeach
+                    </select>
                     @error('unit') <p class="mt-1 text-xs text-red-600">{{ $message }}</p> @enderror
                 </div>
 
@@ -169,7 +173,8 @@
 
                 <div>
                     <label class="app-label">Stock initial</label>
-                    <input type="number" min="0" wire:model="stock_quantity" class="app-input" />
+                    <input type="number" min="0" step="0.01" wire:model="stock_quantity" class="app-input" />
+                    <p class="mt-1 text-xs text-slate-500">Exemple: 1.5 pour 1,5 kg de poisson.</p>
                     @error('stock_quantity') <p class="mt-1 text-xs text-red-600">{{ $message }}</p> @enderror
                 </div>
 
@@ -246,7 +251,7 @@
                                     <div class="text-xs text-slate-500">{{ $product->category?->name ?? 'Sans categorie' }}</div>
                                 </div>
                                 <span class="app-badge {{ $status === 'alert' ? 'bg-rose-100 text-rose-700' : ($status === 'warn' ? 'bg-amber-100 text-amber-700' : 'bg-emerald-100 text-emerald-700') }}">
-                                    Stock {{ $stockQty }}
+                                    Stock {{ number_format((float) $stockQty, 2) }}
                                 </span>
                             </div>
                             <div class="mt-3 flex items-center justify-between text-xs text-slate-500">
@@ -292,10 +297,10 @@
                                 <td>{{ $product->category?->name ?? '—' }}</td>
                                 <td>{{ $product->barcode ?? '—' }}</td>
                                 <td>{{ $product->sku ?? '—' }}</td>
-                                <td>{{ $product->unit ?? '—' }}</td>
+                                <td>{{ $product->unitLabel() }}</td>
                                 <td>
                                     <span class="app-badge {{ $status === 'alert' ? 'bg-rose-100 text-rose-700' : ($status === 'warn' ? 'bg-amber-100 text-amber-700' : 'bg-emerald-100 text-emerald-700') }}">
-                                        {{ $stockQty }}
+                                        {{ number_format((float) $stockQty, 2) }}
                                     </span>
                                 </td>
                                 <td>{{ $product->min_stock ?? 0 }}</td>
@@ -357,7 +362,7 @@
                                 <td class="font-semibold text-slate-900">{{ $product->name }}</td>
                                 <td>{{ $product->category?->name ?? '—' }}</td>
                                 <td>{{ $product->sku ?? '—' }}</td>
-                                <td>{{ $product->stock?->quantity ?? 0 }}</td>
+                                <td>{{ number_format((float) ($product->stock?->quantity ?? 0), 2) }}</td>
                                 <td>{{ $product->min_stock ?? 0 }}</td>
                                 <td>{{ $product->reorder_qty ?? 0 }}</td>
                                 <td>

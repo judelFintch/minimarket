@@ -18,8 +18,11 @@ class Index extends Component
     use WithPagination;
 
     public ?int $supplier_id = null;
+
     public ?string $purchased_at = null;
+
     public array $items = [];
+
     public string $search = '';
 
     protected $queryString = [
@@ -33,7 +36,7 @@ class Index extends Component
             'purchased_at' => ['nullable', 'date'],
             'items' => ['required', 'array', 'min:1'],
             'items.*.product_id' => ['required', 'exists:products,id'],
-            'items.*.quantity' => ['required', 'integer', 'min:1'],
+            'items.*.quantity' => ['required', 'numeric', 'min:0.01'],
             'items.*.unit_cost' => ['required', 'numeric', 'min:0'],
         ];
     }
@@ -94,7 +97,7 @@ class Index extends Component
             $purchase = Purchase::create([
                 'user_id' => auth()->id(),
                 'supplier_id' => $validated['supplier_id'],
-                'reference' => 'PUR-' . now()->format('YmdHis') . '-' . Str::upper(Str::random(4)),
+                'reference' => 'PUR-'.now()->format('YmdHis').'-'.Str::upper(Str::random(4)),
                 'total_amount' => 0,
                 'status' => 'received',
                 'purchased_at' => $validated['purchased_at'],
@@ -127,7 +130,7 @@ class Index extends Component
                     'product_id' => $item['product_id'],
                     'type' => 'in',
                     'quantity' => $item['quantity'],
-                    'reason' => 'Achat ' . $purchase->reference,
+                    'reason' => 'Achat '.$purchase->reference,
                     'occurred_at' => $validated['purchased_at'],
                 ]);
             }
@@ -152,7 +155,7 @@ class Index extends Component
         $purchasesQuery = Purchase::query()
             ->with('supplier')
             ->when($this->search !== '', function ($query) {
-                $query->where('reference', 'like', '%' . $this->search . '%');
+                $query->where('reference', 'like', '%'.$this->search.'%');
             });
 
         if (! auth()->user()?->isAdmin()) {
@@ -165,8 +168,9 @@ class Index extends Component
             ->paginate(10);
 
         $total = collect($this->items)->sum(function ($item) {
-            $quantity = (int) ($item['quantity'] ?? 0);
+            $quantity = (float) ($item['quantity'] ?? 0);
             $cost = (float) ($item['unit_cost'] ?? 0);
+
             return $quantity * $cost;
         });
 
@@ -229,8 +233,8 @@ class Index extends Component
                 continue;
             }
 
-            $quantity = (int) ($item['quantity'] ?? 0);
-            $quantity = max(1, $quantity);
+            $quantity = round((float) ($item['quantity'] ?? 0), 2);
+            $quantity = max(0.01, $quantity);
             $unitCost = $item['unit_cost'] ?? null;
             $unitCost = is_numeric($unitCost) ? (float) $unitCost : (float) ($products[$productId]->cost_price ?? 0);
 

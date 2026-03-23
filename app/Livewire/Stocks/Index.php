@@ -16,10 +16,15 @@ class Index extends Component
     use WithPagination;
 
     public ?int $productId = null;
+
     public string $type = 'in';
-    public int $quantity = 0;
+
+    public float $quantity = 0;
+
     public ?string $reason = null;
+
     public ?string $occurred_at = null;
+
     public string $search = '';
 
     protected function rules(): array
@@ -27,7 +32,7 @@ class Index extends Component
         return [
             'productId' => ['required', 'exists:products,id'],
             'type' => ['required', Rule::in(['in', 'out', 'adjustment'])],
-            'quantity' => ['required', 'integer'],
+            'quantity' => ['required', 'numeric'],
             'reason' => ['nullable', 'string', 'max:255'],
             'occurred_at' => ['nullable', 'date'],
         ];
@@ -52,11 +57,13 @@ class Index extends Component
 
         if ($validated['type'] !== 'adjustment' && $validated['quantity'] <= 0) {
             $this->addError('quantity', 'La quantite doit etre superieure a zero.');
+
             return;
         }
 
         if ($validated['type'] === 'adjustment' && $validated['quantity'] === 0) {
             $this->addError('quantity', 'La quantite ne peut pas etre zero.');
+
             return;
         }
 
@@ -105,7 +112,7 @@ class Index extends Component
             ->with('product')
             ->when($this->search !== '', function ($query) {
                 $query->whereHas('product', function ($subQuery) {
-                    $subQuery->where('name', 'like', '%' . $this->search . '%');
+                    $subQuery->where('name', 'like', '%'.$this->search.'%');
                 });
             })
             ->orderByDesc('occurred_at')

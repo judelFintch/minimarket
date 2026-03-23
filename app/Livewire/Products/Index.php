@@ -32,7 +32,7 @@ class Index extends Component
 
     public ?string $barcode = null;
 
-    public ?string $unit = null;
+    public ?string $unit = 'piece';
 
     public ?float $cost_price = null;
 
@@ -40,7 +40,7 @@ class Index extends Component
 
     public string $currency = 'CDF';
 
-    public int $stock_quantity = 0;
+    public float $stock_quantity = 0;
 
     public int $min_stock = 0;
 
@@ -93,11 +93,11 @@ class Index extends Component
                 'max:255',
                 Rule::unique('products', 'barcode')->ignore($this->productId),
             ],
-            'unit' => ['nullable', 'string', 'max:50'],
+            'unit' => ['required', 'string', Rule::in(array_keys(Product::unitOptions()))],
             'cost_price' => ['nullable', 'numeric', 'min:0'],
             'sale_price' => ['nullable', 'numeric', 'min:0'],
             'currency' => ['required', 'string', 'size:3', Rule::in(['CDF', 'USD', 'EUR'])],
-            'stock_quantity' => ['required', 'integer', 'min:0'],
+            'stock_quantity' => ['required', 'numeric', 'min:0'],
             'min_stock' => ['required', 'integer', 'min:0'],
             'reorder_qty' => ['required', 'integer', 'min:0'],
         ];
@@ -134,7 +134,7 @@ class Index extends Component
         $this->name = $product->name;
         $this->sku = $product->sku;
         $this->barcode = $product->barcode;
-        $this->unit = $product->unit;
+        $this->unit = $product->unit ?: 'piece';
         $this->cost_price = $product->cost_price;
         $this->sale_price = $product->sale_price;
         $this->currency = $product->currency ?? 'CDF';
@@ -160,6 +160,8 @@ class Index extends Component
             'min_stock',
             'reorder_qty',
         ]);
+        $this->unit = 'piece';
+        $this->currency = 'CDF';
     }
 
     public function saveProduct(): void
@@ -186,7 +188,7 @@ class Index extends Component
 
         Stock::updateOrCreate(
             ['product_id' => $product->id],
-            ['quantity' => $validated['stock_quantity']]
+            ['quantity' => round((float) $validated['stock_quantity'], 2)]
         );
 
         $this->resetForm();
@@ -604,6 +606,7 @@ class Index extends Component
             'products' => $products,
             'archivedProducts' => $archivedProducts,
             'categories' => $categories,
+            'unitOptions' => Product::unitOptions(),
         ])->layout('layouts.app');
     }
 
@@ -734,7 +737,7 @@ class Index extends Component
         $data['currency'] = $currency ?: 'CDF';
         $data['sku'] = $this->normalizeIdentifier($data['sku'] ?? null);
         $data['barcode'] = $this->normalizeIdentifier($data['barcode'] ?? null);
-        $data['unit'] = $data['unit'] ?? null;
+        $data['unit'] = $this->normalizeUnit($data['unit'] ?? null, $errors, $lineNumber);
 
         $data['cost_price'] = $this->parseNumber($data['cost_price'] ?? null, false, $errors, $lineNumber, 'prix_achat');
         $data['sale_price'] = $this->parseNumber($data['sale_price'] ?? null, false, $errors, $lineNumber, 'prix_vente');
@@ -769,7 +772,7 @@ class Index extends Component
             return null;
         }
 
-        return $integer ? (int) round($number) : $number;
+        return $integer ? (int) round($number) : round($number, 2);
     }
 
     private function rowIsEmpty(array $row): bool
@@ -818,6 +821,62 @@ class Index extends Component
         }
 
         return null;
+    }
+
+    private function normalizeUnit(?string $value, array &$errors, int $lineNumber): string
+    {
+        if ($value === null) {
+            return 'piece';
+        }
+
+        $normalized = Str::of($value)
+            ->lower()
+            ->trim()
+            ->replace([' ', '-', '/'], '_')
+            ->replace(['é', 'è', 'ê', 'ë'], 'e')
+            ->replace(['à', 'â'], 'a')
+            ->replace(['ô'], 'o')
+            ->replace(['ù', 'û'], 'u')
+            ->replace(['ç'], 'c')
+            ->toString();
+
+        $aliases = [
+            'pcs' => 'piece',
+            'pc' => 'piece',
+            'unite' => 'piece',
+            'piece' => 'piece',
+            'pieces' => 'piece',
+            'kg' => 'kg',
+            'kilogramme' => 'kg',
+            'kilogrammes' => 'kg',
+            'kilogram' => 'kg',
+            'g' => 'g',
+            'gramme' => 'g',
+            'grammes' => 'g',
+            'l' => 'litre',
+            'litre' => 'litre',
+            'litres' => 'litre',
+            'ml' => 'ml',
+            'millilitre' => 'ml',
+            'millilitres' => 'ml',
+            'carton' => 'carton',
+            'sachet' => 'sachet',
+            'paquet' => 'paquet',
+            'pack' => 'paquet',
+            'bouteille' => 'bouteille',
+            'bottle' => 'bouteille',
+            'boite' => 'boite',
+            'box' => 'boite',
+        ];
+
+        $unit = $aliases[$normalized] ?? $normalized;
+        if (! array_key_exists($unit, Product::unitOptions())) {
+            $errors[] = "Ligne {$lineNumber}: unite invalide.";
+
+            return 'piece';
+        }
+
+        return $unit;
     }
 
     private function findProductBySku(?string $sku): ?Product
