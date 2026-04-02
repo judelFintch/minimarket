@@ -215,11 +215,12 @@
                                     <button type="button" wire:click="decrementSelectedQuantity" class="h-9 w-9 rounded-xl border border-slate-200 bg-white text-lg font-semibold text-slate-600 hover:bg-slate-50">
                                         -
                                     </button>
-                                    <input type="number" min="0.01" step="{{ $selectedProductId && in_array($productsById->get($selectedProductId)?->unit, ['kg', 'g', 'litre', 'ml'], true) ? '0.01' : '1' }}" wire:model.live="selectedQuantity" class="app-input" x-on:keydown.enter.prevent="$wire.addToCart()" />
+                                    <input type="number" min="1" step="1" wire:model.live="selectedQuantity" class="app-input" x-on:keydown.enter.prevent="$wire.addToCart()" />
                                     <button type="button" wire:click="incrementSelectedQuantity" class="h-9 w-9 rounded-xl border border-slate-200 bg-white text-lg font-semibold text-slate-600 hover:bg-slate-50">
                                         +
                                     </button>
                                 </div>
+                                @error('selectedQuantity') <p class="mt-1 text-xs text-red-600">{{ $message }}</p> @enderror
                                 <div class="mt-1 text-xs text-slate-500">
                                     Unite: {{ $selectedProductId ? ($productsById->get($selectedProductId)?->unitLabel() ?? 'Piece') : 'Piece' }}
                                 </div>
@@ -325,7 +326,7 @@
                                             <button type="button" wire:click="decrementQuantity({{ $index }})" class="h-9 w-9 rounded-xl border border-slate-200 bg-white text-lg font-semibold text-slate-600 hover:bg-slate-50">
                                                 -
                                             </button>
-                                            <input type="number" min="0.01" step="{{ in_array($product?->unit, ['kg', 'g', 'litre', 'ml'], true) ? '0.01' : '1' }}" wire:model.live="items.{{ $index }}.quantity" class="app-input w-20" />
+                                            <input type="number" min="1" step="1" wire:model.live="items.{{ $index }}.quantity" class="app-input w-20" />
                                             <button type="button" wire:click="incrementQuantity({{ $index }})" class="h-9 w-9 rounded-xl border border-slate-200 bg-white text-lg font-semibold text-slate-600 hover:bg-slate-50">
                                                 +
                                             </button>

@@ -14,7 +14,7 @@ class FractionalQuantitySalesFlowTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_sale_supports_fractional_quantity_for_products_sold_by_weight(): void
+    public function test_sale_rejects_fractional_quantity_even_for_products_sold_by_weight(): void
     {
         $user = User::factory()->create(['role' => 'vendeur']);
         $product = Product::factory()->create([
@@ -40,24 +40,16 @@ class FractionalQuantitySalesFlowTest extends TestCase
                     'discount_rate' => 0,
                 ],
             ])
-            ->call('saveSale');
-
-        $this->assertDatabaseHas('sale_items', [
-            'product_id' => $product->id,
-            'quantity' => 0.75,
-            'unit_price' => 24000,
-            'line_total' => 18000,
-        ]);
+            ->call('saveSale')
+            ->assertHasErrors(['items.0.quantity' => 'integer']);
 
         $this->assertDatabaseHas('stocks', [
             'product_id' => $product->id,
-            'quantity' => 1.75,
+            'quantity' => 2.5,
         ]);
 
-        $this->assertDatabaseHas('stock_movements', [
+        $this->assertDatabaseMissing('sale_items', [
             'product_id' => $product->id,
-            'type' => 'out',
-            'quantity' => 0.75,
         ]);
     }
 }

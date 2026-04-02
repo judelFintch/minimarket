@@ -43,7 +43,7 @@ class Index extends Component
 
     public ?int $selectedProductId = null;
 
-    public float $selectedQuantity = 1;
+    public int $selectedQuantity = 1;
 
     public float $selectedDiscountRate = 0;
 
@@ -56,7 +56,7 @@ class Index extends Component
             'sold_at' => ['nullable', 'date'],
             'items' => ['required', 'array', 'min:1'],
             'items.*.product_id' => ['required', 'exists:products,id'],
-            'items.*.quantity' => ['required', 'numeric', 'min:0.01'],
+            'items.*.quantity' => ['required', 'integer', 'min:1'],
             'items.*.unit_price' => ['required', 'numeric', 'min:0'],
             'items.*.discount_rate' => ['nullable', 'numeric', 'min:0', 'max:100'],
             'discountRate' => ['nullable', 'numeric', 'min:0', 'max:100'],
@@ -118,8 +118,7 @@ class Index extends Component
         }
 
         $this->selectedProductId = $productId;
-        $step = $this->quantityStepForProduct($productId);
-        $this->selectedQuantity = max($step, round((float) $this->selectedQuantity, 2));
+        $this->selectedQuantity = max(1, (int) $this->selectedQuantity);
         $this->selectedDiscountRate = (float) $this->selectedDiscountRate;
         $this->selectedUnitPrice = (float) $selectedUnitPrice;
 
@@ -134,8 +133,13 @@ class Index extends Component
             ]);
         }
 
-        $step = $this->quantityStepForProduct((int) $this->selectedProductId);
-        $quantity = max($step, round((float) $this->selectedQuantity, 2));
+        if (filter_var($this->selectedQuantity, FILTER_VALIDATE_INT) === false || (int) $this->selectedQuantity < 1) {
+            throw ValidationException::withMessages([
+                'selectedQuantity' => 'La quantite doit etre un nombre entier superieur ou egal a 1.',
+            ]);
+        }
+
+        $quantity = max(1, (int) $this->selectedQuantity);
         $discountRate = max(0, min(100, (float) $this->selectedDiscountRate));
         $price = Product::query()
             ->active()
@@ -152,7 +156,7 @@ class Index extends Component
 
         foreach ($this->items as $index => $item) {
             if ((int) ($item['product_id'] ?? 0) === (int) $this->selectedProductId) {
-                $this->items[$index]['quantity'] = round(((float) ($item['quantity'] ?? 0)) + $quantity, 2);
+                $this->items[$index]['quantity'] = (int) ($item['quantity'] ?? 0) + $quantity;
                 $this->items[$index]['unit_price'] = $price;
                 $this->items[$index]['discount_rate'] = $discountRate;
                 $this->resetSelectedItem();
@@ -175,14 +179,12 @@ class Index extends Component
 
     public function incrementSelectedQuantity(): void
     {
-        $step = $this->quantityStepForProduct((int) $this->selectedProductId);
-        $this->selectedQuantity = round(max($step, (float) $this->selectedQuantity) + $step, 2);
+        $this->selectedQuantity = max(1, (int) $this->selectedQuantity) + 1;
     }
 
     public function decrementSelectedQuantity(): void
     {
-        $step = $this->quantityStepForProduct((int) $this->selectedProductId);
-        $this->selectedQuantity = round(max($step, (float) $this->selectedQuantity - $step), 2);
+        $this->selectedQuantity = max(1, (int) $this->selectedQuantity - 1);
     }
 
     public function resetSelectedItemForm(): void
@@ -221,8 +223,7 @@ class Index extends Component
 
         if ($productId) {
             if ((int) $this->selectedProductId === (int) $productId) {
-                $step = $this->quantityStepForProduct((int) $productId);
-                $this->selectedQuantity = round(max($step, (float) $this->selectedQuantity) + $step, 2);
+                $this->selectedQuantity = max(1, (int) $this->selectedQuantity) + 1;
             } else {
                 $this->selectProduct((int) $productId);
             }
@@ -233,6 +234,13 @@ class Index extends Component
 
     public function updatedItems($value, $name): void
     {
+        if (str_ends_with($name, '.quantity')) {
+            $index = (int) explode('.', $name)[0];
+            $this->items[$index]['quantity'] = max(1, (int) $value);
+
+            return;
+        }
+
         if (! str_ends_with($name, '.product_id')) {
             return;
         }
@@ -276,8 +284,7 @@ class Index extends Component
             return;
         }
 
-        $step = $this->quantityStepForItem($index);
-        $this->items[$index]['quantity'] = round(((float) ($this->items[$index]['quantity'] ?? 0)) + $step, 2);
+        $this->items[$index]['quantity'] = max(1, (int) ($this->items[$index]['quantity'] ?? 0)) + 1;
         $this->dispatch('focus-barcode');
     }
 
@@ -287,9 +294,8 @@ class Index extends Component
             return;
         }
 
-        $step = $this->quantityStepForItem($index);
-        $current = (float) ($this->items[$index]['quantity'] ?? $step);
-        $this->items[$index]['quantity'] = round(max($step, $current - $step), 2);
+        $current = max(1, (int) ($this->items[$index]['quantity'] ?? 1));
+        $this->items[$index]['quantity'] = max(1, $current - 1);
         $this->dispatch('focus-barcode');
     }
 
@@ -303,24 +309,6 @@ class Index extends Component
         $this->sold_at = now()->format('Y-m-d');
         $this->items = [];
         $this->resetSelectedItem();
-    }
-
-    private function quantityStepForItem(int $index): float
-    {
-        $productId = (int) ($this->items[$index]['product_id'] ?? 0);
-
-        return $this->quantityStepForProduct($productId);
-    }
-
-    private function quantityStepForProduct(int $productId): float
-    {
-        if ($productId <= 0) {
-            return 1.0;
-        }
-
-        $unit = Product::query()->whereKey($productId)->value('unit');
-
-        return in_array($unit, ['kg', 'g', 'litre', 'ml'], true) ? 0.01 : 1.0;
     }
 
     private function normalizeItemsWithPrices(array $items): array
@@ -338,6 +326,7 @@ class Index extends Component
         return collect($items)->map(function ($item) use ($prices) {
             $price = (float) ($prices[$item['product_id']] ?? 0);
             $item['unit_price'] = $price;
+            $item['quantity'] = (int) ($item['quantity'] ?? 0);
             $item['discount_rate'] = (float) ($item['discount_rate'] ?? 0);
 
             return $item;
