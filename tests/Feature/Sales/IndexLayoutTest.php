@@ -28,5 +28,6 @@ class IndexLayoutTest extends TestCase
         $this->assertStringContainsString('search-add-', $content);
         $this->assertStringContainsString('sales-cart-list', $content);
         $this->assertStringContainsString('sales-cart-footer', $content);
+        $this->assertStringNotContainsString("window.open('about:blank', '_blank')", $content);
     }
 }

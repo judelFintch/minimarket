@@ -20,13 +20,7 @@
             setTimeout(() => lastAddedId = null, 600);
         }
         if ($event.detail.invoiceId) {
-            if (window.__receiptWindow && !window.__receiptWindow.closed) {
-                window.__receiptWindow.location = `/invoices/${$event.detail.invoiceId}/receipt`;
-                window.__receiptWindow.focus();
-                window.__receiptWindow = null;
-            } else {
-                window.open(`/invoices/${$event.detail.invoiceId}/receipt`, '_blank');
-            }
+            window.open(`/invoices/${$event.detail.invoiceId}/receipt`, '_blank');
         }
     "
     x-on:focus-barcode.window="$refs.barcode?.focus()"
@@ -273,7 +267,7 @@
                         @endif
                     </div>
                     <div class="flex items-center gap-2">
-                        <button type="submit" class="app-btn-primary" x-on:click="window.__receiptWindow = window.open('about:blank', '_blank');" @disabled($hasMixedCurrency)>
+                        <button type="submit" class="app-btn-primary" @disabled($hasMixedCurrency)>
                             Valider
                         </button>
                         <button type="button" wire:click="savePending" class="app-btn-secondary">
@@ -357,7 +351,7 @@
                                 @endif
                             </div>
                             <div class="flex flex-wrap gap-2">
-                                <button type="submit" class="app-btn-primary" x-on:click="window.__receiptWindow = window.open('about:blank', '_blank');" @disabled($hasMixedCurrency)>
+                                <button type="submit" class="app-btn-primary" @disabled($hasMixedCurrency)>
                                     Valider le panier
                                 </button>
                                 <button type="button" wire:click="resetForm" class="app-btn-ghost">
@@ -379,7 +373,7 @@
                     @endif
                 </div>
                 <div class="flex items-center gap-2">
-                    <button type="submit" class="app-btn-primary" x-on:click="window.__receiptWindow = window.open('about:blank', '_blank');" @disabled($hasMixedCurrency)>
+                    <button type="submit" class="app-btn-primary" @disabled($hasMixedCurrency)>
                         Valider
                     </button>
                     <button type="button" wire:click="savePending" class="app-btn-secondary">
