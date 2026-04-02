@@ -2,6 +2,8 @@
 
 namespace App\Livewire\Products;
 
+use App\Exports\ProductsExport;
+use App\Exports\ProductsTemplateExport;
 use App\Models\Category;
 use App\Models\Product;
 use App\Models\Stock;
@@ -15,7 +17,7 @@ use Livewire\WithFileUploads;
 use Livewire\WithPagination;
 use Maatwebsite\Excel\Concerns\ToArray;
 use Maatwebsite\Excel\Facades\Excel;
-use Symfony\Component\HttpFoundation\StreamedResponse;
+use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
 class Index extends Component
 {
@@ -469,67 +471,18 @@ class Index extends Component
         }
     }
 
-    public function exportProducts(): StreamedResponse
+    public function exportProducts(): BinaryFileResponse
     {
         $this->authorizeAccess();
 
-        $headers = $this->csvHeaders();
-        $products = Product::query()
-            ->with(['category', 'stock'])
-            ->whereNull('archived_at')
-            ->orderBy('name')
-            ->cursor();
-
-        return response()->streamDownload(function () use ($headers, $products) {
-            $handle = fopen('php://output', 'w');
-            fputcsv($handle, $headers);
-
-            foreach ($products as $product) {
-                fputcsv($handle, [
-                    $product->name,
-                    $product->sku,
-                    $product->barcode,
-                    $product->unit,
-                    $product->cost_price,
-                    $product->sale_price,
-                    $product->currency ?? 'CDF',
-                    $product->stock?->quantity ?? 0,
-                    $product->min_stock ?? 0,
-                    $product->reorder_qty ?? 0,
-                    $product->category?->name,
-                    $product->category_id,
-                ]);
-            }
-
-            fclose($handle);
-        }, 'products.csv');
+        return Excel::download(new ProductsExport, 'products.xlsx');
     }
 
-    public function downloadTemplate(): StreamedResponse
+    public function downloadTemplate(): BinaryFileResponse
     {
         $this->authorizeAccess();
 
-        $headers = $this->csvHeaders();
-
-        return response()->streamDownload(function () use ($headers) {
-            $handle = fopen('php://output', 'w');
-            fputcsv($handle, $headers);
-            fputcsv($handle, [
-                'Exemple produit',
-                'SKU-001',
-                'BAR-001',
-                'piece',
-                1000,
-                1500,
-                'CDF',
-                10,
-                2,
-                5,
-                'Categorie',
-                '',
-            ]);
-            fclose($handle);
-        }, 'products-template.csv');
+        return Excel::download(new ProductsTemplateExport, 'products-template.xlsx');
     }
 
     public function render()

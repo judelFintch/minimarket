@@ -10,12 +10,12 @@
         <div class="app-card">
             <div class="app-card-header">
                 <div>
-                    <h3 class="app-card-title">Import / Export CSV</h3>
-                    <p class="app-card-subtitle">Fichier CSV compatible Excel.</p>
+                    <h3 class="app-card-title">Import / Export Excel</h3>
+                    <p class="app-card-subtitle">Export et modele au format Excel.</p>
                 </div>
                 <div class="flex flex-wrap items-center gap-3">
-                    <button type="button" wire:click="exportProducts" class="app-btn-secondary">Exporter CSV</button>
-                    <button type="button" wire:click="downloadTemplate" class="app-btn-ghost text-teal-600 hover:text-teal-700">Modele CSV</button>
+                    <button type="button" wire:click="exportProducts" class="app-btn-secondary">Exporter Excel</button>
+                    <button type="button" wire:click="downloadTemplate" class="app-btn-ghost text-teal-600 hover:text-teal-700">Modele Excel</button>
                 </div>
             </div>
 
