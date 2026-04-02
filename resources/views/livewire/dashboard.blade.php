@@ -110,8 +110,8 @@
         <div class="app-card">
             <div class="app-card-header">
                 <div>
-                    <h3 class="app-card-title">Alertes rapides</h3>
-                    <p class="app-card-subtitle">Actions prioritaires.</p>
+                    <h3 class="app-card-title">Priorites</h3>
+                    <p class="app-card-subtitle">Ce qui demande une action rapide.</p>
                 </div>
             </div>
             <div class="app-card-body space-y-4 text-sm text-slate-600">
@@ -121,165 +121,76 @@
                 </div>
                 <div class="flex items-start gap-3">
                     <span class="mt-1 h-2 w-2 rounded-full bg-teal-400"></span>
-                    Mettez a jour les reapprovisionnements critiques.
+                    <a href="{{ route('stocks.alerts') }}" wire:navigate class="font-semibold text-slate-900 hover:text-teal-700">Consultez les reapprovisionnements critiques.</a>
                 </div>
                 <div class="flex items-start gap-3">
                     <span class="mt-1 h-2 w-2 rounded-full bg-sky-400"></span>
-                    Suivi du solde net et des depenses mensuelles.
+                    <a href="{{ route('reports.cashflow') }}" wire:navigate class="font-semibold text-slate-900 hover:text-teal-700">Suivez le solde net et les depenses mensuelles.</a>
                 </div>
             </div>
         </div>
     </div>
 
     @if ($isAdmin)
-        <div class="grid gap-6 lg:grid-cols-3">
-            <div class="app-card lg:col-span-2">
+        <div class="grid gap-6 lg:grid-cols-2">
+            <div class="app-card">
                 <div class="app-card-header">
                     <div>
-                        <h3 class="app-card-title">Marge brute (mois)</h3>
-                        <p class="app-card-subtitle">Marge par devise sur les ventes payees.</p>
+                        <h3 class="app-card-title">Pilotage admin</h3>
+                        <p class="app-card-subtitle">Resume compact des points a surveiller.</p>
                     </div>
                 </div>
                 <div class="app-card-body">
                     <div class="grid gap-3 sm:grid-cols-2">
-                        @forelse ($marginByCurrency as $row)
-                            <div class="rounded-2xl border border-slate-200/70 bg-slate-50 px-4 py-3">
-                                <div class="text-xs uppercase tracking-wider text-slate-500">{{ $row->currency }}</div>
-                                <div class="mt-2 text-lg font-semibold {{ $row->margin >= 0 ? 'text-emerald-600' : 'text-rose-600' }}">
-                                    {{ number_format($row->margin, 2) }}
-                                </div>
+                        <div class="rounded-2xl border border-slate-200/70 bg-slate-50 px-4 py-3">
+                            <div class="text-xs uppercase tracking-wider text-slate-500">Marge brute</div>
+                            <div class="mt-2 space-y-1 text-sm text-slate-700">
+                                @forelse ($marginByCurrency as $row)
+                                    <div class="flex items-center justify-between">
+                                        <span>{{ $row->currency }}</span>
+                                        <span class="font-semibold {{ $row->margin >= 0 ? 'text-emerald-600' : 'text-rose-600' }}">{{ number_format($row->margin, 2) }}</span>
+                                    </div>
+                                @empty
+                                    <div>Aucune donnee.</div>
+                                @endforelse
                             </div>
-                        @empty
-                            <div class="text-sm text-slate-500">Aucune donnee ce mois.</div>
-                        @endforelse
-                    </div>
-                </div>
-            </div>
-
-            <div class="app-card">
-                <div class="app-card-header">
-                    <div>
-                        <h3 class="app-card-title">Produits a marge negative</h3>
-                        <p class="app-card-subtitle">Top 5 du mois.</p>
-                    </div>
-                </div>
-                <div class="overflow-x-auto">
-                    <table class="app-table">
-                        <thead>
-                            <tr>
-                                <th>Produit</th>
-                                <th>Devise</th>
-                                <th>Marge</th>
-                            </tr>
-                        </thead>
-                        <tbody class="bg-white">
-                            @forelse ($negativeMarginProducts as $row)
-                                <tr>
-                                    <td class="font-semibold text-slate-900">{{ $row->name }}</td>
-                                    <td>{{ $row->currency }}</td>
-                                    <td class="text-rose-600">{{ number_format($row->margin, 2) }}</td>
-                                </tr>
-                            @empty
-                                <tr>
-                                    <td colspan="3" class="px-4 py-6 text-center text-sm text-slate-500">Aucune marge negative.</td>
-                                </tr>
-                            @endforelse
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
-
-        <div class="grid gap-6 lg:grid-cols-3">
-            <div class="app-card">
-                <div class="app-card-header">
-                    <div>
-                        <h3 class="app-card-title">Rotation des stocks</h3>
-                        <p class="app-card-subtitle">Produits lents sur 30 jours.</p>
-                    </div>
-                </div>
-                <div class="app-card-body space-y-3 text-sm text-slate-600">
-                    <div>{{ $slowMovingCount }} produits a rotation lente.</div>
-                    @forelse ($slowMovingProducts as $row)
-                        <div class="flex items-center justify-between">
-                            <span class="font-semibold text-slate-900">{{ $row->name }}</span>
-                            <span class="text-xs text-slate-500">{{ $row->last_sold_at ? \Illuminate\Support\Carbon::parse($row->last_sold_at)->format('Y-m-d') : 'Jamais' }}</span>
                         </div>
-                    @empty
-                        <div class="text-sm text-slate-500">Aucun produit en retard.</div>
-                    @endforelse
-                </div>
-            </div>
 
-            <div class="app-card">
-                <div class="app-card-header">
-                    <div>
-                        <h3 class="app-card-title">Ruptures</h3>
-                        <p class="app-card-subtitle">Produits a zero stock.</p>
-                    </div>
-                </div>
-                <div class="app-card-body space-y-3 text-sm text-slate-600">
-                    @forelse ($outOfStockProducts as $row)
-                        <div class="flex items-center justify-between">
-                            <span class="font-semibold text-slate-900">{{ $row->name }}</span>
-                            <span class="text-xs text-slate-500">{{ number_format($row->quantity, 2) }} {{ $row->currency }}</span>
+                        <div class="rounded-2xl border border-slate-200/70 bg-slate-50 px-4 py-3">
+                            <div class="text-xs uppercase tracking-wider text-slate-500">Qualite des donnees</div>
+                            <div class="mt-2 space-y-1 text-sm text-slate-700">
+                                <div>{{ $missingSalePriceCount }} sans prix de vente</div>
+                                <div>{{ $missingCostPriceCount }} sans prix d'achat</div>
+                                <div>{{ $missingMinStockCount }} sans seuil mini</div>
+                                <div>{{ $inactiveSuppliersCount }} fournisseurs inactifs</div>
+                            </div>
                         </div>
-                    @empty
-                        <div class="text-sm text-slate-500">Aucune rupture.</div>
-                    @endforelse
-                </div>
-            </div>
 
-            <div class="app-card">
-                <div class="app-card-header">
-                    <div>
-                        <h3 class="app-card-title">Valeur du stock</h3>
-                        <p class="app-card-subtitle">Base cout d'achat.</p>
-                    </div>
-                </div>
-                <div class="app-card-body space-y-3 text-sm text-slate-600">
-                    @forelse ($stockValueByCurrency as $row)
-                        <div class="flex items-center justify-between">
-                            <span class="font-semibold text-slate-900">{{ $row->currency }}</span>
-                            <span>{{ number_format($row->total, 2) }}</span>
+                        <div class="rounded-2xl border border-slate-200/70 bg-slate-50 px-4 py-3">
+                            <div class="text-xs uppercase tracking-wider text-slate-500">Stock</div>
+                            <div class="mt-2 space-y-1 text-sm text-slate-700">
+                                <div>{{ $outOfStockCount }} produits en rupture</div>
+                                <div>{{ $slowMovingCount }} produits lents</div>
+                                @forelse ($stockValueByCurrency as $row)
+                                    <div class="flex items-center justify-between">
+                                        <span>Valeur {{ $row->currency }}</span>
+                                        <span class="font-semibold">{{ number_format($row->total, 2) }}</span>
+                                    </div>
+                                @empty
+                                    <div>Aucune valorisation.</div>
+                                @endforelse
+                            </div>
                         </div>
-                    @empty
-                        <div class="text-sm text-slate-500">Aucune donnee.</div>
-                    @endforelse
-                </div>
-            </div>
-        </div>
 
-        <div class="grid gap-6 lg:grid-cols-3">
-            <div class="app-card lg:col-span-2">
-                <div class="app-card-header">
-                    <div>
-                        <h3 class="app-card-title">Encaissements 30/90 jours</h3>
-                        <p class="app-card-subtitle">Ventes payees par devise.</p>
-                    </div>
-                </div>
-                <div class="app-card-body grid gap-4 sm:grid-cols-2 text-sm text-slate-600">
-                    <div>
-                        <div class="text-xs uppercase tracking-wider text-slate-500">30 jours</div>
-                        @forelse ($revenueLast30 as $row)
-                            <div class="flex items-center justify-between">
-                                <span class="font-semibold text-slate-900">{{ $row->currency }}</span>
-                                <span>{{ number_format($row->total, 2) }}</span>
+                        <div class="rounded-2xl border border-slate-200/70 bg-slate-50 px-4 py-3">
+                            <div class="text-xs uppercase tracking-wider text-slate-500">Equipe</div>
+                            <div class="mt-2 space-y-1 text-sm text-slate-700">
+                                <div>{{ $usersCount }} utilisateurs</div>
+                                <div>{{ $suspendedUsersCount }} suspendus</div>
+                                <div>{{ $unverifiedUsersCount }} non verifies</div>
+                                <div>{{ $unpaidSalesCount }} ventes impayees</div>
                             </div>
-                        @empty
-                            <div class="text-sm text-slate-500">Aucune vente.</div>
-                        @endforelse
-                    </div>
-                    <div>
-                        <div class="text-xs uppercase tracking-wider text-slate-500">90 jours</div>
-                        @forelse ($revenueLast90 as $row)
-                            <div class="flex items-center justify-between">
-                                <span class="font-semibold text-slate-900">{{ $row->currency }}</span>
-                                <span>{{ number_format($row->total, 2) }}</span>
-                            </div>
-                        @empty
-                            <div class="text-sm text-slate-500">Aucune vente.</div>
-                        @endforelse
+                        </div>
                     </div>
                 </div>
             </div>
@@ -287,205 +198,52 @@
             <div class="app-card">
                 <div class="app-card-header">
                     <div>
-                        <h3 class="app-card-title">Depenses 30/90 jours</h3>
-                        <p class="app-card-subtitle">Sorties par devise.</p>
+                        <h3 class="app-card-title">Activite recente</h3>
+                        <p class="app-card-subtitle">Ce qu'il faut surveiller sans descendre toute la page.</p>
                     </div>
                 </div>
-                <div class="app-card-body grid gap-4 text-sm text-slate-600">
+                <div class="app-card-body space-y-5">
                     <div>
-                        <div class="text-xs uppercase tracking-wider text-slate-500">30 jours</div>
-                        @forelse ($expenseLast30 as $row)
-                            <div class="flex items-center justify-between">
-                                <span class="font-semibold text-slate-900">{{ $row->currency }}</span>
-                                <span>{{ number_format($row->total, 2) }}</span>
-                            </div>
-                        @empty
-                            <div class="text-sm text-slate-500">Aucune depense.</div>
-                        @endforelse
-                    </div>
-                    <div>
-                        <div class="text-xs uppercase tracking-wider text-slate-500">90 jours</div>
-                        @forelse ($expenseLast90 as $row)
-                            <div class="flex items-center justify-between">
-                                <span class="font-semibold text-slate-900">{{ $row->currency }}</span>
-                                <span>{{ number_format($row->total, 2) }}</span>
-                            </div>
-                        @empty
-                            <div class="text-sm text-slate-500">Aucune depense.</div>
-                        @endforelse
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <div class="grid gap-6 lg:grid-cols-2">
-            <div class="app-card">
-                <div class="app-card-header">
-                    <div>
-                        <h3 class="app-card-title">Top vendeurs (mois)</h3>
-                        <p class="app-card-subtitle">Ventes par utilisateur.</p>
-                    </div>
-                </div>
-                <div class="overflow-x-auto">
-                    <table class="app-table">
-                        <thead>
-                            <tr>
-                                <th>Utilisateur</th>
-                                <th>Ventes</th>
-                                <th>Total</th>
-                            </tr>
-                        </thead>
-                        <tbody class="bg-white">
+                        <div class="mb-2 text-xs font-semibold uppercase tracking-wider text-slate-500">Top vendeurs</div>
+                        <div class="space-y-2 text-sm text-slate-700">
                             @forelse ($salesByUser as $row)
-                                <tr>
-                                    <td class="font-semibold text-slate-900">{{ $row->user_name }}</td>
-                                    <td>{{ $row->sales_count }}</td>
-                                    <td>{{ number_format($row->total_amount, 2) }}</td>
-                                </tr>
+                                <div class="flex items-center justify-between rounded-xl border border-slate-200/70 bg-slate-50 px-3 py-2">
+                                    <span class="font-semibold text-slate-900">{{ $row->user_name }}</span>
+                                    <span>{{ $row->sales_count }} ventes</span>
+                                </div>
                             @empty
-                                <tr>
-                                    <td colspan="3" class="px-4 py-6 text-center text-sm text-slate-500">Aucune vente.</td>
-                                </tr>
+                                <div class="text-slate-500">Aucune vente.</div>
                             @endforelse
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-
-            <div class="app-card">
-                <div class="app-card-header">
-                    <div>
-                        <h3 class="app-card-title">Depenses par categorie</h3>
-                        <p class="app-card-subtitle">Top 5 sur 30 jours.</p>
-                    </div>
-                </div>
-                <div class="overflow-x-auto">
-                    <table class="app-table">
-                        <thead>
-                            <tr>
-                                <th>Categorie</th>
-                                <th>Devise</th>
-                                <th>Total</th>
-                            </tr>
-                        </thead>
-                        <tbody class="bg-white">
-                            @forelse ($expenseByCategory as $row)
-                                <tr>
-                                    <td class="font-semibold text-slate-900">{{ $row->category }}</td>
-                                    <td>{{ $row->currency }}</td>
-                                    <td>{{ number_format($row->total, 2) }}</td>
-                                </tr>
-                            @empty
-                                <tr>
-                                    <td colspan="3" class="px-4 py-6 text-center text-sm text-slate-500">Aucune depense.</td>
-                                </tr>
-                            @endforelse
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
-
-        <div class="grid gap-6 lg:grid-cols-2">
-            <div class="app-card">
-                <div class="app-card-header">
-                    <div>
-                        <h3 class="app-card-title">Alertes admin</h3>
-                        <p class="app-card-subtitle">Qualite des donnees et risques.</p>
-                    </div>
-                </div>
-                <div class="app-card-body space-y-3 text-sm text-slate-600">
-                    <div>{{ $missingSalePriceCount }} produits sans prix de vente.</div>
-                    <div>{{ $missingCostPriceCount }} produits sans prix d'achat.</div>
-                    <div>{{ $missingMinStockCount }} produits sans seuil mini.</div>
-                    <div>{{ $inactiveSuppliersCount }} fournisseurs inactifs depuis 60 jours.</div>
-                </div>
-            </div>
-
-            <div class="app-card">
-                <div class="app-card-header">
-                    <div>
-                        <h3 class="app-card-title">Sorties stock importantes</h3>
-                        <p class="app-card-subtitle">Top 5 sur 30 jours.</p>
-                    </div>
-                </div>
-                <div class="overflow-x-auto">
-                    <table class="app-table">
-                        <thead>
-                            <tr>
-                                <th>Reference</th>
-                                <th>Utilisateur</th>
-                                <th>Quantite</th>
-                            </tr>
-                        </thead>
-                        <tbody class="bg-white">
-                            @forelse ($largeStockOuts as $row)
-                                <tr>
-                                    <td class="font-semibold text-slate-900">{{ $row->reference }}</td>
-                                    <td>{{ $row->user?->name ?? '—' }}</td>
-                                    <td>{{ number_format($row->total_quantity, 2) }}</td>
-                                </tr>
-                            @empty
-                                <tr>
-                                    <td colspan="3" class="px-4 py-6 text-center text-sm text-slate-500">Aucune sortie enregistree.</td>
-                                </tr>
-                            @endforelse
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
-
-        <div class="grid gap-6 lg:grid-cols-2">
-            <div class="app-card">
-                <div class="app-card-header">
-                    <div>
-                        <h3 class="app-card-title">Fournisseurs inactifs</h3>
-                        <p class="app-card-subtitle">Dernier achat par fournisseur.</p>
-                    </div>
-                </div>
-                <div class="app-card-body space-y-3 text-sm text-slate-600">
-                    @forelse ($inactiveSuppliers as $row)
-                        <div class="flex items-center justify-between">
-                            <span class="font-semibold text-slate-900">{{ $row->name }}</span>
-                            <span class="text-xs text-slate-500">{{ $row->last_purchase_at ? \Illuminate\Support\Carbon::parse($row->last_purchase_at)->format('Y-m-d') : 'Jamais' }}</span>
                         </div>
-                    @empty
-                        <div class="text-sm text-slate-500">Aucun fournisseur inactif.</div>
-                    @endforelse
-                </div>
-            </div>
-
-            <div class="app-card">
-                <div class="app-card-header">
-                    <div>
-                        <h3 class="app-card-title">Nouveaux utilisateurs</h3>
-                        <p class="app-card-subtitle">Derniers comptes crees.</p>
                     </div>
-                </div>
-                <div class="overflow-x-auto">
-                    <table class="app-table">
-                        <thead>
-                            <tr>
-                                <th>Nom</th>
-                                <th>Email</th>
-                                <th>Role</th>
-                            </tr>
-                        </thead>
-                        <tbody class="bg-white">
+
+                    <div>
+                        <div class="mb-2 text-xs font-semibold uppercase tracking-wider text-slate-500">Utilisateurs recents</div>
+                        <div class="space-y-2 text-sm text-slate-700">
                             @forelse ($recentUsers as $row)
-                                <tr>
-                                    <td class="font-semibold text-slate-900">{{ $row->name }}</td>
-                                    <td>{{ $row->email }}</td>
-                                    <td>{{ $row->role ?? 'vendeur' }}</td>
-                                </tr>
+                                <div class="flex items-center justify-between rounded-xl border border-slate-200/70 bg-slate-50 px-3 py-2">
+                                    <span class="font-semibold text-slate-900">{{ $row->name }}</span>
+                                    <span>{{ $row->role ?? 'vendeur' }}</span>
+                                </div>
                             @empty
-                                <tr>
-                                    <td colspan="3" class="px-4 py-6 text-center text-sm text-slate-500">Aucun utilisateur.</td>
-                                </tr>
+                                <div class="text-slate-500">Aucun utilisateur.</div>
                             @endforelse
-                        </tbody>
-                    </table>
+                        </div>
+                    </div>
+
+                    <div>
+                        <div class="mb-2 text-xs font-semibold uppercase tracking-wider text-slate-500">Fournisseurs inactifs</div>
+                        <div class="space-y-2 text-sm text-slate-700">
+                            @forelse ($inactiveSuppliers as $row)
+                                <div class="flex items-center justify-between rounded-xl border border-slate-200/70 bg-slate-50 px-3 py-2">
+                                    <span class="font-semibold text-slate-900">{{ $row->name }}</span>
+                                    <span>{{ $row->last_purchase_at ? \Illuminate\Support\Carbon::parse($row->last_purchase_at)->format('Y-m-d') : 'Jamais' }}</span>
+                                </div>
+                            @empty
+                                <div class="text-slate-500">Aucun fournisseur inactif.</div>
+                            @endforelse
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
