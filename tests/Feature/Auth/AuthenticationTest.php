@@ -67,6 +67,15 @@ class AuthenticationTest extends TestCase
             ->assertSeeVolt('layout.navigation');
     }
 
+    public function test_navigation_tooltip_styles_are_defined(): void
+    {
+        $styles = file_get_contents(resource_path('css/app.css'));
+
+        $this->assertIsString($styles);
+        $this->assertStringContainsString('.sidebar-tooltip', $styles);
+        $this->assertStringContainsString('.sidebar-is-collapsed .sidebar-link:hover .sidebar-tooltip', $styles);
+    }
+
     public function test_users_can_logout(): void
     {
         $user = User::factory()->create();

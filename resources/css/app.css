@@ -93,6 +93,14 @@
         @apply rounded-full bg-rose-100 px-2 py-0.5 text-xs font-semibold text-rose-700;
     }
 
+    .sidebar-tooltip {
+        @apply pointer-events-none invisible absolute left-full top-1/2 z-20 ml-3 -translate-y-1/2 whitespace-nowrap rounded-xl bg-slate-900 px-2.5 py-1.5 text-xs font-semibold text-white opacity-0 shadow-lg transition;
+    }
+
+    .sidebar-is-collapsed .sidebar-link:hover .sidebar-tooltip {
+        @apply visible opacity-100;
+    }
+
     .app-topbar {
         @apply flex items-center justify-between border-b border-slate-200/70 bg-white/85 px-4 py-4 backdrop-blur lg:hidden;
     }
