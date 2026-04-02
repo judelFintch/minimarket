@@ -18,10 +18,9 @@ class DashboardViewTest extends TestCase
 
         $response->assertOk();
         $response->assertSee('Priorites');
-        $response->assertSee('Pilotage admin');
-        $response->assertSee('Activite recente');
-        $response->assertDontSee('Encaissements 30/90 jours');
-        $response->assertDontSee('Depenses 30/90 jours');
-        $response->assertDontSee('Sorties stock importantes');
+        $response->assertSee('Resume admin');
+        $response->assertSee('Dernieres ventes');
+        $response->assertDontSee('Activite recente');
+        $response->assertDontSee('Dernieres depenses');
     }
 }
