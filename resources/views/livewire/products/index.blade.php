@@ -207,14 +207,10 @@
         <div class="app-card">
             <div class="app-card-header">
                 <div>
-                    <h3 class="app-card-title">Liste des produits</h3>
-                    <p class="app-card-subtitle">Recherchez rapidement un produit.</p>
+                    <h3 class="app-card-title">Liste des produits actifs</h3>
+                    <p class="app-card-subtitle">Recherchez rapidement un produit actif.</p>
                 </div>
                 <div class="flex flex-wrap items-center gap-3">
-                    <label class="inline-flex items-center gap-2 text-sm text-slate-600">
-                        <input type="checkbox" wire:model="showArchived" class="rounded border-slate-300 text-teal-600 focus:ring-teal-500" />
-                        Afficher archives
-                    </label>
                     <select wire:model.live="sort" class="app-select sm:max-w-xs">
                         <option value="smart">Tri intelligent</option>
                         <option value="stock">Stock</option>
@@ -331,61 +327,5 @@
                 {{ $products->links() }}
             </div>
         </div>
-
-        @if ($showArchived)
-            <div class="app-card">
-                <div class="app-card-header">
-                    <div>
-                        <h3 class="app-card-title">Produits archives</h3>
-                        <p class="app-card-subtitle">Produits archives uniquement.</p>
-                    </div>
-                </div>
-
-                <div class="overflow-x-auto">
-                    <table class="app-table">
-                        <thead>
-                            <tr>
-                                <th>Produit</th>
-                                <th>Categorie</th>
-                            <th>SKU</th>
-                            <th>Stock</th>
-                            <th>Seuil</th>
-                            <th>Reappro</th>
-                            <th>Prix vente</th>
-                            <th>Devise</th>
-                            <th class="text-right">Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody class="bg-white">
-                        @forelse ($archivedProducts as $product)
-                            <tr>
-                                <td class="font-semibold text-slate-900">{{ $product->name }}</td>
-                                <td>{{ $product->category?->name ?? '—' }}</td>
-                                <td>{{ $product->sku ?? '—' }}</td>
-                                <td>{{ number_format((float) ($product->stock?->quantity ?? 0), 2) }}</td>
-                                <td>{{ $product->min_stock ?? 0 }}</td>
-                                <td>{{ $product->reorder_qty ?? 0 }}</td>
-                                <td>
-                                    {{ $product->sale_price !== null ? number_format($product->sale_price, 2) : '—' }}
-                                </td>
-                                <td>{{ $product->currency ?? 'CDF' }}</td>
-                                <td class="text-right">
-                                    <button type="button" wire:click="restoreProduct({{ $product->id }})" class="app-btn-ghost text-amber-600 hover:text-amber-700">Restaurer</button>
-                                </td>
-                                </tr>
-                            @empty
-                                <tr>
-                                    <td colspan="9" class="px-4 py-6 text-center text-sm text-slate-500">Aucun produit archive.</td>
-                                </tr>
-                            @endforelse
-                        </tbody>
-                    </table>
-                </div>
-
-                <div class="px-6 py-4">
-                    {{ $archivedProducts->links() }}
-                </div>
-            </div>
-        @endif
     </div>
 </div>

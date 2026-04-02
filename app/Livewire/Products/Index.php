@@ -54,8 +54,6 @@ class Index extends Component
 
     public string $deleteError = '';
 
-    public bool $showArchived = false;
-
     public $importFile;
 
     public $importExcelFile;
@@ -118,16 +116,11 @@ class Index extends Component
         $this->resetPage();
     }
 
-    public function updatingShowArchived(): void
-    {
-        $this->resetPage();
-    }
-
     public function editProduct(int $productId): void
     {
         $this->authorizeAccess();
         $this->deleteError = '';
-        $product = Product::query()->with('stock')->findOrFail($productId);
+        $product = Product::query()->active()->with('stock')->findOrFail($productId);
 
         $this->productId = $product->id;
         $this->categoryId = $product->category_id;
@@ -197,7 +190,7 @@ class Index extends Component
     public function deleteProduct(int $productId): void
     {
         $this->authorizeAccess();
-        $product = Product::query()->findOrFail($productId);
+        $product = Product::query()->active()->findOrFail($productId);
 
         $product->update([
             'archived_at' => Carbon::now(),
@@ -543,10 +536,10 @@ class Index extends Component
     {
         $this->authorizeAccess();
         $productsQuery = Product::query()
+            ->active()
             ->select('products.*')
             ->with(['category', 'stock'])
             ->leftJoin('stocks', 'stocks.product_id', '=', 'products.id')
-            ->whereNull('products.archived_at')
             ->when($this->search !== '', function ($query) {
                 $query->where(function ($subQuery) {
                     $subQuery->where('products.name', 'like', '%'.$this->search.'%')
@@ -582,29 +575,12 @@ class Index extends Component
 
         $products = $productsQuery->paginate(10);
 
-        $archivedProducts = collect();
-        if ($this->showArchived) {
-            $archivedProducts = Product::query()
-                ->with(['category', 'stock'])
-                ->whereNotNull('archived_at')
-                ->when($this->search !== '', function ($query) {
-                    $query->where(function ($subQuery) {
-                        $subQuery->where('name', 'like', '%'.$this->search.'%')
-                            ->orWhere('sku', 'like', '%'.$this->search.'%')
-                            ->orWhere('barcode', 'like', '%'.$this->search.'%');
-                    });
-                })
-                ->orderBy('name')
-                ->paginate(10, pageName: 'archived');
-        }
-
         $categories = Category::query()
             ->orderBy('name')
             ->get();
 
         return view('livewire.products.index', [
             'products' => $products,
-            'archivedProducts' => $archivedProducts,
             'categories' => $categories,
             'unitOptions' => Product::unitOptions(),
         ])->layout('layouts.app');

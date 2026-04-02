@@ -106,13 +106,22 @@ class Index extends Component
 
     public function selectProduct(int $productId): void
     {
+        $selectedUnitPrice = Product::query()
+            ->active()
+            ->whereKey($productId)
+            ->value(DB::raw('COALESCE(promo_price, sale_price)'));
+
+        if ($selectedUnitPrice === null) {
+            $this->resetSelectedItem();
+
+            return;
+        }
+
         $this->selectedProductId = $productId;
         $step = $this->quantityStepForProduct($productId);
         $this->selectedQuantity = max($step, round((float) $this->selectedQuantity, 2));
         $this->selectedDiscountRate = (float) $this->selectedDiscountRate;
-        $this->selectedUnitPrice = Product::query()
-            ->whereKey($productId)
-            ->value(DB::raw('COALESCE(promo_price, sale_price)'));
+        $this->selectedUnitPrice = (float) $selectedUnitPrice;
 
         $this->dispatch('focus-barcode');
     }
@@ -129,8 +138,16 @@ class Index extends Component
         $quantity = max($step, round((float) $this->selectedQuantity, 2));
         $discountRate = max(0, min(100, (float) $this->selectedDiscountRate));
         $price = Product::query()
+            ->active()
             ->whereKey($this->selectedProductId)
             ->value(DB::raw('COALESCE(promo_price, sale_price)'));
+
+        if ($price === null) {
+            throw ValidationException::withMessages([
+                'selectedProductId' => 'Ce produit n\'est plus disponible a la vente.',
+            ]);
+        }
+
         $price = (float) ($price ?? 0);
 
         foreach ($this->items as $index => $item) {
@@ -198,6 +215,7 @@ class Index extends Component
         }
 
         $productId = Product::query()
+            ->active()
             ->where('barcode', $barcode)
             ->value('id');
 
@@ -227,7 +245,7 @@ class Index extends Component
             return;
         }
 
-        $product = Product::query()->select(['id', 'sale_price', 'promo_price'])->find($value);
+        $product = Product::query()->active()->select(['id', 'sale_price', 'promo_price'])->find($value);
         $price = $product && $product->promo_price !== null ? (float) $product->promo_price : (float) ($product?->sale_price ?? 0);
         $this->items[$index]['unit_price'] = $price;
     }
@@ -241,6 +259,7 @@ class Index extends Component
         }
 
         $this->selectedUnitPrice = (float) (Product::query()
+            ->active()
             ->whereKey($value)
             ->value(DB::raw('COALESCE(promo_price, sale_price)')) ?? 0);
     }
@@ -651,6 +670,7 @@ class Index extends Component
     {
         $isAdmin = auth()->user()?->isAdmin() ?? false;
         $products = Product::query()
+            ->active()
             ->with(['stock', 'category'])
             ->orderBy('name')
             ->get();
@@ -659,6 +679,7 @@ class Index extends Component
         $filteredProducts = collect();
         if ($this->productSearch !== '') {
             $filteredProducts = Product::query()
+                ->active()
                 ->with('stock')
                 ->where('name', 'like', '%'.$this->productSearch.'%')
                 ->orderBy('name')
@@ -667,7 +688,7 @@ class Index extends Component
         }
 
         $favoriteProducts = auth()->user()
-            ? auth()->user()->favoriteProducts()->with('stock')->limit(6)->get()
+            ? auth()->user()->favoriteProducts()->active()->with('stock')->limit(6)->get()
             : collect();
 
         $frequentProductIds = [];
@@ -692,6 +713,7 @@ class Index extends Component
         $frequentProducts = collect();
         if (! empty($frequentProductIds)) {
             $frequentProductsQuery = Product::query()
+                ->active()
                 ->with('stock')
                 ->whereIn('id', $frequentProductIds);
 

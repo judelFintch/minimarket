@@ -29,9 +29,12 @@ class GlobalSearch extends Component
         if ($term !== '') {
             if ($canManageStock) {
                 $products = Product::query()
-                    ->where('name', 'like', '%' . $term . '%')
-                    ->orWhere('sku', 'like', '%' . $term . '%')
-                    ->orWhere('barcode', 'like', '%' . $term . '%')
+                    ->active()
+                    ->where(function ($query) use ($term) {
+                        $query->where('name', 'like', '%'.$term.'%')
+                            ->orWhere('sku', 'like', '%'.$term.'%')
+                            ->orWhere('barcode', 'like', '%'.$term.'%');
+                    })
                     ->limit(5)
                     ->get(['id', 'name', 'sku']);
 
@@ -46,7 +49,7 @@ class GlobalSearch extends Component
             }
 
             $sales = Sale::query()
-                ->where('reference', 'like', '%' . $term . '%')
+                ->where('reference', 'like', '%'.$term.'%')
                 ->when($role !== 'admin', fn ($q) => $q->where('user_id', auth()->id()))
                 ->limit(4)
                 ->get(['id', 'reference']);
@@ -61,7 +64,7 @@ class GlobalSearch extends Component
 
             if ($canManageStock) {
                 $purchases = Purchase::query()
-                    ->where('reference', 'like', '%' . $term . '%')
+                    ->where('reference', 'like', '%'.$term.'%')
                     ->limit(4)
                     ->get(['id', 'reference']);
                 foreach ($purchases as $purchase) {
@@ -76,7 +79,7 @@ class GlobalSearch extends Component
 
             if ($canManageStock) {
                 $expenses = Expense::query()
-                    ->where('title', 'like', '%' . $term . '%')
+                    ->where('title', 'like', '%'.$term.'%')
                     ->limit(4)
                     ->get(['id', 'title']);
                 foreach ($expenses as $expense) {
@@ -91,7 +94,7 @@ class GlobalSearch extends Component
 
             if ($canManageStock) {
                 $suppliers = Supplier::query()
-                    ->where('name', 'like', '%' . $term . '%')
+                    ->where('name', 'like', '%'.$term.'%')
                     ->limit(4)
                     ->get(['id', 'name']);
                 foreach ($suppliers as $supplier) {

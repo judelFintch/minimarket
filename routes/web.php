@@ -5,12 +5,13 @@ use App\Livewire\Categories\Index as CategoriesIndex;
 use App\Livewire\Dashboard;
 use App\Livewire\ExpenseCategories\Index as ExpenseCategoriesIndex;
 use App\Livewire\Expenses\Index as ExpensesIndex;
+use App\Livewire\Products\ArchivedIndex as ArchivedProductsIndex;
 use App\Livewire\Products\Index as ProductsIndex;
 use App\Livewire\Purchases\Index as PurchasesIndex;
 use App\Livewire\Reports\Cashflow as CashflowReport;
 use App\Livewire\Reports\Sales as SalesReport;
-use App\Livewire\Sales\Index as SalesIndex;
 use App\Livewire\Sales\History as SalesHistory;
+use App\Livewire\Sales\Index as SalesIndex;
 use App\Livewire\StockOuts\Index as StockOutsIndex;
 use App\Livewire\Stocks\Alerts as StocksAlerts;
 use App\Livewire\Stocks\Index as StocksIndex;
@@ -35,6 +36,8 @@ Route::middleware(['auth'])->group(function () {
         ->name('expense-categories.index');
     Route::get('products', ProductsIndex::class)
         ->name('products.index');
+    Route::get('products/archived', ArchivedProductsIndex::class)
+        ->name('products.archived');
     Route::get('stocks', StocksIndex::class)
         ->name('stocks.index');
     Route::get('stock-outs', StockOutsIndex::class)
