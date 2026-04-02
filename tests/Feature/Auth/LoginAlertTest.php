@@ -3,7 +3,7 @@
 namespace Tests\Feature\Auth;
 
 use App\Listeners\SendLoginAlert;
-use App\Livewire\Dashboard;
+use App\Livewire\System\Index as SystemIndex;
 use App\Models\AppSetting;
 use App\Models\User;
 use App\Notifications\LoginAlertFailedNotification;
@@ -103,7 +103,7 @@ class LoginAlertTest extends TestCase
         Notification::assertSentTo($admin, LoginAlertFailedNotification::class);
     }
 
-    public function test_dashboard_displays_login_alert_health_status(): void
+    public function test_system_health_page_displays_login_alert_health_status(): void
     {
         $admin = User::factory()->create([
             'role' => 'admin',
@@ -120,7 +120,7 @@ class LoginAlertTest extends TestCase
         Config::set('mail.mailers.smtp.host', 'mail.example.com');
         Config::set('mail.from.address', 'alert@example.com');
 
-        $response = $this->actingAs($admin)->get(route('dashboard'));
+        $response = $this->actingAs($admin)->get(route('system.health'));
 
         $response->assertOk();
         $response->assertSee('Sante systeme email');
@@ -132,14 +132,14 @@ class LoginAlertTest extends TestCase
         $response->assertSee('2026-04-02 12:34:56');
     }
 
-    public function test_admin_can_save_login_alert_settings_from_dashboard(): void
+    public function test_admin_can_save_login_alert_settings_from_system_page(): void
     {
         $admin = User::factory()->create([
             'role' => 'admin',
         ]);
 
         Livewire::actingAs($admin)
-            ->test(Dashboard::class)
+            ->test(SystemIndex::class)
             ->set('loginAlertEnabled', true)
             ->set('loginAlertRecipient', 'security@example.com')
             ->set('companyEmail', 'company@example.com')

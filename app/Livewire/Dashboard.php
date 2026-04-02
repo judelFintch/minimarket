@@ -2,7 +2,6 @@
 
 namespace App\Livewire;
 
-use App\Models\AppSetting;
 use App\Models\ExpensePayment;
 use App\Models\Product;
 use App\Models\Sale;
@@ -17,49 +16,6 @@ use Livewire\Component;
 
 class Dashboard extends Component
 {
-    public bool $loginAlertEnabled = false;
-
-    public string $loginAlertRecipient = '';
-
-    public string $companyEmail = '';
-
-    public function mount(): void
-    {
-        $this->loginAlertEnabled = AppSetting::boolean('login_alert_enabled');
-        $this->loginAlertRecipient = AppSetting::string('login_alert_recipient', '') ?? '';
-        $this->companyEmail = AppSetting::string('company_email', '') ?? '';
-    }
-
-    protected function rules(): array
-    {
-        return [
-            'loginAlertEnabled' => ['required', 'boolean'],
-            'loginAlertRecipient' => ['nullable', 'email', 'max:255'],
-            'companyEmail' => ['nullable', 'email', 'max:255'],
-        ];
-    }
-
-    public function saveLoginAlertSettings(): void
-    {
-        abort_unless(auth()->user()?->isAdmin(), 403);
-
-        $validated = $this->validate();
-
-        if ($validated['loginAlertEnabled'] && blank($validated['loginAlertRecipient']) && blank($validated['companyEmail'])) {
-            $message = "Configurez au moins un destinataire email avant d'activer les alertes de connexion.";
-            $this->addError('loginAlertRecipient', $message);
-            $this->addError('companyEmail', $message);
-
-            return;
-        }
-
-        AppSetting::set('login_alert_enabled', $validated['loginAlertEnabled'] ? '1' : '0');
-        AppSetting::set('login_alert_recipient', filled($validated['loginAlertRecipient']) ? trim($validated['loginAlertRecipient']) : null);
-        AppSetting::set('company_email', filled($validated['companyEmail']) ? trim($validated['companyEmail']) : null);
-
-        session()->flash('login-alert-settings-saved', 'Configuration des alertes de connexion enregistree.');
-    }
-
     public function render()
     {
         $user = auth()->user();
@@ -169,19 +125,6 @@ class Dashboard extends Component
         $suspendedUsersCount = 0;
         $unverifiedUsersCount = 0;
         $recentUsers = collect();
-        $loginAlertHealth = [
-            'enabled' => AppSetting::boolean('login_alert_enabled'),
-            'mailer' => config('mail.default'),
-            'host' => (string) (config('mail.mailers.'.config('mail.default').'.host') ?? '—'),
-            'from_address' => (string) (config('mail.from.address') ?? '—'),
-            'company_email' => AppSetting::string('company_email'),
-            'dedicated_recipient' => AppSetting::string('login_alert_recipient'),
-            'effective_recipients' => AppSetting::loginAlertRecipients(),
-            'last_status' => AppSetting::string('login_alert_last_status'),
-            'last_error' => AppSetting::string('login_alert_last_error'),
-            'last_attempt_at' => AppSetting::string('login_alert_last_attempt_at'),
-        ];
-        $internalLoginAlerts = collect();
 
         if ($isAdmin) {
             $salesByUser = Sale::query()
@@ -381,11 +324,6 @@ class Dashboard extends Component
             $suspendedUsersCount = User::query()->whereNotNull('suspended_at')->count();
             $unverifiedUsersCount = User::query()->whereNull('email_verified_at')->count();
             $recentUsers = User::query()->orderByDesc('created_at')->limit(5)->get();
-            $internalLoginAlerts = $user?->notifications()
-                ->where('type', \App\Notifications\LoginAlertFailedNotification::class)
-                ->latest()
-                ->limit(5)
-                ->get() ?? collect();
         }
 
         return view('livewire.dashboard', [
@@ -423,8 +361,6 @@ class Dashboard extends Component
             'suspendedUsersCount' => $suspendedUsersCount,
             'unverifiedUsersCount' => $unverifiedUsersCount,
             'recentUsers' => $recentUsers,
-            'loginAlertHealth' => $loginAlertHealth,
-            'internalLoginAlerts' => $internalLoginAlerts,
         ])->layout('layouts.app');
     }
 }
