@@ -34,4 +34,38 @@ class AppSetting extends Model
         static::updateOrCreate(['key' => $key], ['value' => $value]);
         Cache::forget("app_setting_{$key}");
     }
+
+    public static function boolean(string $key, bool $default = false): bool
+    {
+        return filter_var(static::get($key, $default), FILTER_VALIDATE_BOOLEAN);
+    }
+
+    public static function string(string $key, ?string $default = null): ?string
+    {
+        $value = static::get($key, $default);
+
+        if ($value === null) {
+            return $default;
+        }
+
+        $value = trim((string) $value);
+
+        return $value !== '' ? $value : $default;
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    public static function loginAlertRecipients(): array
+    {
+        return collect([
+            static::string('login_alert_recipient'),
+            static::string('company_email'),
+        ])
+            ->filter(fn (?string $email): bool => filled($email))
+            ->map(fn (string $email): string => mb_strtolower(trim($email)))
+            ->unique()
+            ->values()
+            ->all();
+    }
 }
